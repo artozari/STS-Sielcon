@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/datatables.css">
+</head>
+
+<body>
+    <header class="header">
+        <h1>Sts</h1>
+    </header>
+    <main>
+        <form class="search-form" action="/" method="post">
+            <label for="fecha">Fecha De Inicio:</label>
+            <input type="date" name="fecha">
+            <label for="tiempo">Tiempo:</label>
+            <select name="tiempo" id="tiempo">
+                <option value="1">1 dia</option>
+                <option value="3">3 dias</option>
+                <option value="7">1 semana</option>
+                <option value="15">15 dias</option>
+                <option value="30" selected>1 mes</option>
+                <option value="90">3 meses</option>
+                <option value="365">1 año</option>
+            </select>
+            <button type="submit">Buscar</button>
+        </form>
+
+        <% if ( items && items.length> 0) { %>
+            <div>
+
+                <table id="tablaDias" class="display">
+                    <thead>
+                        <tr>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Cantidad de Juegos</th>
+                            <th scope="col">Promedio RPM</th>
+                            <th scope="col">Juego Inicial</th>
+                            <th scope="col">Juego Final</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3">Chi de la Muestra: <%= chi %>
+                            </th>
+                            <th colspan="3">Cantidad de Datos: <%= cantDatos %>
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+                <script src="/jquery.js" defer></script> <!-- jQuery -->
+                <script src="/datatables.js" defer></script> <!-- Script de DataTables -->
+                <script src="/script.js" data-items='<%- JSON.stringify(items) %>' defer></script> <!-- Tu script -->
+                <%} else {%>
+                    <p>No hay datos para mostrar.</p>
+                    <%}%>
+            </div>
+
+            <div>
+                <% if ( items && items.length> 0) { %>
+                    <table id="tablaDe1Dia" class="display">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Mumero de Jugada</th>
+                                <th>Numero Ganador</th>
+                                <th>Rpm</th>
+                                <th>Clockwise</th>
+                            </tr>
+                        </thead>
+                    </table>
+                    <%} %>
+            </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Sielcon</p>
+    </footer>
+</body>
+
+</html>

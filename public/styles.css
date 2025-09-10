@@ -1,0 +1,83 @@
+/* @import url("datatables.net-dt");
+@import url("datatables.net-buttons-dt"); */
+
+:root {
+  --color-primary: #be5c35;
+  --color-secondary: #273f4f;
+  --color-tertiary: #7d7d7d;
+  --color-quaternary: #447d9b;
+  --color-quinary: #d7d7d7;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: var(--color-secondary);
+  color: var(--color-quinary);
+  justify-self: center;
+  width: 80%;
+  height: 100vh;
+  box-sizing: border-box;
+  margin: 0%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+}
+
+header {
+  background-color: var(--color-primary);
+  text-align: center;
+  width: 80%;
+  justify-self: center;
+}
+
+header h1 {
+  margin: 0px;
+  padding: 0px;
+}
+
+main {
+  width: 80%;
+  margin: 0;
+  height: auto;
+  justify-self: center;
+}
+
+form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 100%;
+}
+
+table {
+  background-color: var(--color-quaternary);
+  /* color: var(--color-secondary); */
+  overflow: scroll;
+}
+
+.fechaDetalle {
+  text-align: center;
+  font-size: 1.2em;
+  margin: 0px 0;
+  background-color: var(--color-primary);
+  color: var(--color-quinary);
+}
+
+footer {
+  background-color: var(--color-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40px;
+  position: relative;
+  bottom: 0px;
+  width: 80%;
+  justify-self: center;
+}
+
+footer p {
+  margin: 0px;
+  padding: 0px;
+}

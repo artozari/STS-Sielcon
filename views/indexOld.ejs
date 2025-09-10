@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <title>STS</title>
+    <link rel="stylesheet" href="/styles.css">
+
+</head>
+
+<body>
+    <h1>STS </h1>
+    <form class="search-form" action="/" method="post">
+        <label for="fecha">Fecha De Inicio:</label>
+        <input type="date" name="fecha">
+        <label for="tiempo">Tiempo:</label>
+        <select name="tiempo" id="tiempo">
+            <option value="1">1 dia</option>
+            <option value="3">3 dias</option>
+            <option value="7">1 semana</option>
+            <option value="15">15 dias</option>
+            <option value="30" selected>1 mes</option>
+            <option value="90">3 meses</option>
+            <option value="365">1 año</option>
+        </select>
+        <button type="submit">Buscar</button>
+    </form>
+
+
+
+    <% if (items && items.length> 0) { %>
+        <h2>Resultados: <%= items.length %>
+        </h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>DIA</th>
+                    <th>CANTIDAD DE JUEGOS</th>
+                    <th>PROMEDIO DE RPM</th>
+                    <th>OPCIONES</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% items.forEach(function(item) { %>
+                    <tr>
+                        <td>
+                            <%= item.date %>
+                        </td>
+                        <td>
+                            <%= item.cantidad %>
+                        </td>
+                        <td>
+                            <%= item.promedioRpm %>
+                        </td>
+                        <td>
+                            <button type="button" class="btn-modal" data-id="<%= item.date%>">Detalles</button>
+                        </td>
+                    </tr>
+                    <% }); %>
+            </tbody>
+        </table>
+
+        <form action="/export" method="post">
+            <button type="button" class="btn-export" data-items='<%= JSON.stringify(items) %>'>Exportar a CSV</button>
+        </form>
+
+        <div class="modal" id="modal-detalles">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <p id="modal-detalles-body"></p>
+            </div>
+        </div>
+        <script src="/pagination.js" defer></script>
+
+        <% } else { %>
+            <p>No se encontraron resultados.</p>
+            <% } %>
+
+
+
+
+</body>
+<footer class="footer">
+    <p>© 2023 STS. Todos los derechos reservados.</p>
+</footer>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="utf-8">
+    <title>STS</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/datatables.css">
+
+    <script src="/pagination.js" defer></script>
+</head>
+
+<body>
+    <h1>STS </h1>
+    <form class="search-form" action="/op2" method="post">
+        <label for="fecha">Fecha De Inicio:</label>
+        <input type="date" name="fecha">
+        <label for="tiempo">Tiempo:</label>
+        <select name="tiempo" id="tiempo">
+            <option value="1">1 dia</option>
+            <option value="3">3 dias</option>
+            <option value="7">1 semana</option>
+            <option value="15">15 dias</option>
+            <option value="30">1 mes</option>
+            <option value="90">3 meses</option>
+            <option value="365">1 a o</option>
+        </select>
+        <button type="submit">Buscar</button>
+    </form>
+
+    <% if (items) { %>
+        <h2>Resultados: <%= items.length %>
+        </h2>
+        <table id="results-table" class="display">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>Numero de juego</th>
+                    <th>Numero ganador</th>
+                    <th>RPM</th>
+                    <th>CHI</th>
+                    <th>Juego Inicial</th>
+                    <th>Juego Final</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% items.forEach(function(item) { %>
+                    <tr>
+                        <td>
+                            <%= item.fecha[0] %>
+                        </td>
+                        <td>
+                            <%= item.fecha[1] %>
+                        </td>
+                        <td>
+                            <%= item.fecha[2] %>
+                        </td>
+                        <td>
+                            <%= item.fecha[3] %>
+                        </td>
+                        <td>
+                            <%= item.chi %>
+                        </td>
+                        <td>
+                            <%= item.juegoIni %>
+                        </td>
+                        <td>
+                            <%= item.juegoFin %>
+                        </td>
+                        <td>
+                            <%= item.fecha[4] %>
+                        </td>
+                        <td>
+                            <%= new Date(item.date).toLocaleDateString() %>
+                        </td>
+                    </tr>
+                    <% }); %>
+            </tbody>
+        </table>
+        <% } %>
+            <% if (items.length===0) { %>
+                <p>No se encontraron resultados.</p>
+                <% } else { %>
+                    <form action="/export" method="post">
+                        <button type="button" class="btn-exportDay" data-items='<%= JSON.stringify(items) %>'>Exportar a
+                            CSV</button>
+                    </form>
+                    <% } %>
+                        <script>
+                            // const items = <% - items %>;
+                            console.log("Datos recibidos desde el servidor:", items);
+                        </script>
+</body>
+
+</html>
