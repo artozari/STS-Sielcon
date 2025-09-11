@@ -55,7 +55,7 @@ app.post("/", (req, res) => {
         const cantDatos = rows.length;
         datosRawProcesados = procesarVector(rows);
         datosDeRangoDeDias = DiasDeDatosRawProcesados(datosRawProcesados);
-        console.log("datosDeRangoDeDias", datosDeRangoDeDias);
+        // console.log("datosDeRangoDeDias", datosDeRangoDeDias);
 
         res.render("index", {
           items: datosDeRangoDeDias,
@@ -175,9 +175,9 @@ const procesarDatosDeUnDiaRawParaPresentar = (items) => {
     gameNumber: item.fecha[1],
     winNumber: item.fecha[2],
     rpm: item.fecha[3],
-    chi: item.chi,
-    juegoIni: item.juegoIni,
-    juegoFin: item.juegoFin,
+    // chi: item.chi,
+    // juegoIni: item.juegoIni,
+    // juegoFin: item.juegoFin,
     clockwise: item.fecha[4],
     fecha: item.date,
   }));

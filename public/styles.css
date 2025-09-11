@@ -64,6 +64,9 @@ table {
   background-color: var(--color-primary);
   color: var(--color-quinary);
 }
+.btn-exportJuegosDelDia {
+  margin-bottom: 12px;
+}
 
 footer {
   background-color: var(--color-primary);

@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
     data: items,
     order: [], // Deshabilitar el ordenamiento inicial
     columns: [
-      { data: "date", title: "Fecha" },
+      { data: "date", title: "Fecha", orderable: false },
       { data: "cantidad", title: "Cantidad de Juegos" },
       { data: "promedioRpm", title: "Promedio RPM" },
       { data: "juegoFin", title: "Juego Inicial" },
@@ -48,13 +48,14 @@ const datosDe1Dia = async (fecha) =>
         destroy: true, // Permitir la reinitialización
         data: data.items,
         columns: [
-          { data: "id", title: "ID" },
+          { data: "id", title: "ID", orderable: false },
           { data: "gameNumber", title: "Número de Juego" },
           { data: "winNumber", title: "Número Ganador" },
           { data: "rpm", title: "Rpm" },
           { data: "clockwise", title: "Clockwise" },
         ],
       });
+
       const divFecha = document.createElement("div");
       divFecha.classList.add("fechaDetalle");
       divFecha.textContent = `Juegos del día ${data.fecha}`;
@@ -64,7 +65,78 @@ const datosDe1Dia = async (fecha) =>
           divFecha,
           document.getElementById("tablaDe1Dia")
         );
+
+      if (!document.querySelector(".btn-exportJuegosDelDia")) {
+        const btnExport = document.createElement("button");
+        btnExport.classList.add("btn-exportJuegosDelDia");
+        btnExport.textContent = "Exportar CSV";
+        btnExport.setAttribute("data-items", JSON.stringify(data));
+        document
+          .getElementById("tablaDe1Dia_wrapper")
+          .parentElement.insertBefore(
+            btnExport,
+            document.getElementById("tablaDe1Dia_wrapper").nextSibling
+          );
+
+        document
+          .querySelector(".btn-exportJuegosDelDia")
+          .addEventListener("click", function () {
+            const items = JSON.parse(this.getAttribute("data-items"));
+            // console.log("Exportando juegos del día a CSV...", items);
+            const titles = [
+              "ID",
+              "Número de Juego",
+              "Número Ganador",
+              "Rpm",
+              "Clockwise",
+              "fecha",
+            ];
+            const csvContent = `data:text/csv;charset=utf-8,${[
+              titles.join(";"),
+              ...items.items.map((item) =>
+                Object.entries(item)
+                  .filter(([key]) => !["juegoIni", "juegoFin"].includes(key))
+                  .map(([_, value]) => value)
+                  .join(";")
+                  .replace(/"/g, '""')
+              ),
+            ].join("\n")}`;
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "juegosDelDia.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          });
+      }
     })
     .catch((error) => {
       console.error("Error al obtener los datos de 1 día:", error);
     });
+
+document
+  .querySelector(".btn-exportMuestraTotal")
+  .addEventListener("click", function () {
+    const items = JSON.parse(this.getAttribute("data-items"));
+    const titles = [
+      "Fecha",
+      "Cantidad de Juegos",
+      "Promedio RPM",
+      "Juego Inicial",
+      "Juego Final",
+    ];
+    const csvContent = `data:text/csv;charset=utf-8,${[
+      titles.join(";"),
+      ...items.map((item) => Object.values(item).join(";").replace(/"/g, '""')),
+    ].join("\n")}`;
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "datos.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
