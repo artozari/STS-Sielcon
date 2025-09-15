@@ -17,6 +17,7 @@ app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.set("port", process.env.PORT || 3000);
 
+let datosRaw = {};
 let datosRawProcesados = [];
 let datosDeRangoDeDias;
 let datosDeUnDia;
@@ -31,7 +32,7 @@ const db = new sqlite3.Database("dev.db", (err) => {
 });
 
 app.get("/", (req, res) => {
-  res.render("index", { items: [] });
+  res.render("index", { items: [], stat: true });
 });
 
 app.post("/", (req, res) => {
@@ -53,6 +54,7 @@ app.post("/", (req, res) => {
       } else if (rows.length <= 300000) {
         // console.log("datos", rows.length);
         const cantDatos = rows.length;
+        datosRaw = rows;
         datosRawProcesados = procesarVector(rows);
         datosDeRangoDeDias = DiasDeDatosRawProcesados(datosRawProcesados);
         // console.log("datosDeRangoDeDias", datosDeRangoDeDias);
@@ -61,6 +63,7 @@ app.post("/", (req, res) => {
           items: datosDeRangoDeDias,
           chi: datosRawProcesados.length > 0 ? datosRawProcesados[0].chi : 0,
           cantDatos: cantDatos,
+          stat: true,
         });
       } else {
         // console.log("Resultados de la consulta:", rows, "datos", rows.length);
@@ -167,6 +170,29 @@ app.post("/detalle", (req, res) => {
     items: datosDeUnDia,
     fecha: req.body.fecha,
   });
+});
+
+app.post("/stats", (req, res) => {
+  const fecha = req.body.fecha;
+  const [day, month, year] = fecha.split("/");
+  const fechaIni = new Date(`${year}-${month}-${day}`).getTime();
+  const fechafin = fechaIni + 24 * 60 * 60 * 1000;
+  console.log("datosRaw:", datosRaw);
+
+  const rangoDeDatos = datosRaw.filter((item) => {
+    return item.createdAt >= fechaIni && fechafin <= item.createdAt;
+  });
+  const { ruleta, cantidades } = obtenerValoresDeNumerosIndividuales(
+    rangoDeDatos,
+    4
+  );
+  const result = ruleta.map((num, index) => ({
+    ruleta: num,
+    cantidad: cantidades[index],
+  }));
+  console.log("Estadísticas enviadas:", result);
+
+  res.send({ result: result });
 });
 
 const procesarDatosDeUnDiaRawParaPresentar = (items) => {

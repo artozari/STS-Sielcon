@@ -1,3 +1,4 @@
+// let btnstat = false;
 document.addEventListener("DOMContentLoaded", () => {
   const items = JSON.parse(
     document.querySelector("script[data-items]").dataset.items
@@ -21,6 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
         render: function (data) {
           return `<button class="btn btn-detalleDia" data-id="${data}" style="background-color: transparent; border: none; cursor: pointer;" title="Ver Juegosd del dia ${data}">
                     <img src="detallesIco.svg" alt="Ver Detalle" width="15" height="15" />
+                  </button>
+                  <button class="btn btn-Stats" data-id="${data}" style="background-color: transparent; border: none; cursor: pointer;" title="Ver Juegosd del dia ${data}">
+                    <img src="stats.svg" alt="Ver Detalle" width="15" height="15" />
                   </button>`;
         },
       },
@@ -140,3 +144,36 @@ document
     link.click();
     document.body.removeChild(link);
   });
+
+$("#tablaDias").on("click", ".btn-Stats", function () {
+  const btn = this;
+  btnstat = true;
+  const fecha = btn.getAttribute("data-id");
+
+  mostrarEstadisticas(fecha);
+});
+
+const mostrarEstadisticas = (fecha) => {
+  const estadisticas = fetch("/stats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fecha: fecha }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("Estadísticas recibidas:", data);
+      if (data.result.length > 0) {
+        new DataTable("#tablaDeNumerosGanadores", {
+          destroy: true, // Permitir la reinitialización
+          data: data.result,
+          columns: [
+            { data: "ruleta", title: "Número" },
+            { data: "cantidad", title: "Cantidad de Veces" },
+          ],
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("Error al obtener las estadísticas:", error);
+    });
+};
