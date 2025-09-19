@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
   //   console.log("Items cargados desde el servidor:", items);
 
   let table = new DataTable("#tablaDias", {
-    destroy: true, // Permitir la reinitialización
     data: items,
     order: [], // Deshabilitar el ordenamiento inicial
     columns: [
@@ -31,38 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       },
     ],
-    footerCallback: function (row, data, start, end, display) {
-      // Calcular totales
-      const totalCantidad = data.reduce((sum, item) => sum + item.cantidad, 0);
-      const totalPromedioRpm = data.reduce(
-        (sum, item) => sum + parseFloat(item.promedioRpm || 0),
-        0
-      );
-
-      // Actualizar el contenido del footer
-      const footerCells = $(row).find("th");
-      $(footerCells[1]).text(`Total: ${totalCantidad}`);
-      $(footerCells[2]).text(
-        `Promedio Total RPM: ${(totalPromedioRpm / data.length).toFixed(2)}`
-      );
-      $(footerCells[3]).text(`Total: -`);
-      // $(footerCells[4]).text(`Total: -`);
-
-      // Agregar un botón en el footer
-      if (!$(footerCells[4]).find(".btn-footer-action").length) {
-        const button = `<button class="btn-footer-action" style="cursor: pointer;">Mostrar Estadisticas total</button>`;
-        $(footerCells[4]).html(button);
-
-        // Agregar evento al botón
-        $(footerCells[4])
-          .find(".btn-footer-action")
-          .on("click", function () {
-            console.log("Botón en el footer clickeado");
-            fetchCantidadesAll(); // Llamada directa a la función global
-            mostrarEstadisticasAll(); // Llamada directa a la función global
-          });
-      }
-    },
   });
 });
 
@@ -81,12 +48,7 @@ const datosDe1Dia = async (fecha) =>
   })
     .then((response) => response.json())
     .then((data) => {
-      // Destruir la instancia previa de DataTables si existe
-      if ($.fn.DataTable.isDataTable("#tablaDe1Dia")) {
-        $("#tablaDe1Dia").DataTable().destroy();
-      }
-
-      // Inicializar la tabla nuevamente
+      //   console.log("Datos de 1 día recibidos:", data.items);
       new DataTable("#tablaDe1Dia", {
         destroy: true, // Permitir la reinitialización
         data: data.items,
@@ -199,44 +161,11 @@ $("#tablaDias").on("click", ".btn-Stats", function () {
   mostrarEstadisticas(fecha);
 });
 
-window.mostrarEstadisticas = function mostrarEstadisticas(fecha) {
+const mostrarEstadisticas = (fecha) => {
   fetch("/stats", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fecha: fecha }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log("Estadísticas recibidas:", data);
-      data.result = data.result.map((item) => {
-        const totalCantidades = data.result.reduce(
-          (acum, curr) => acum + curr.cantidad,
-          0
-        );
-        const porcentaje = (item.cantidad * 100) / totalCantidades;
-        return { ...item, porcentaje: porcentaje.toFixed(2) };
-      });
-      if (data.result.length > 0) {
-        new DataTable("#tablaDeNumerosGanadores", {
-          destroy: true, // Permitir la reinitialización
-          data: data.result,
-          columns: [
-            { data: "ruleta", title: "Número" },
-            { data: "porcentaje", title: "Porcentaje" },
-            { data: "cantidad", title: "Cantidad de Veces" },
-          ],
-        });
-      }
-    })
-    .catch((error) => {
-      console.error("Error al obtener las estadísticas:", error);
-    });
-};
-
-window.mostrarEstadisticasAll = function mostrarEstadisticasAll() {
-  fetch("/statsAll", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
   })
     .then((response) => response.json())
     .then((data) => {

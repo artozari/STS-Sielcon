@@ -23,6 +23,15 @@ let datosDeRangoDeDias;
 let datosDeUnDia;
 let datosResult = [];
 
+// Conexión a la base de datos SQLite
+const db = new sqlite3.Database(process.env.DATABASE, (err) => {
+  if (err) {
+    console.error("Error al conectar con la base de datos:", err.message);
+  } else {
+    console.log("Conexión exitosa a la base de datos SQLite.");
+  }
+});
+
 app.get("/", (req, res) => {
   res.render("index", { items: [], stat: false });
 });
@@ -32,25 +41,9 @@ app.post("/", (req, res) => {
     const { fecha, tiempo } = req.body;
     const fechaIni = new Date(fecha).getTime();
     const fechafin = fechaIni + tiempo * 24 * 60 * 60 * 1000;
-
-    // Crear una nueva conexión a la base de datos
-    const db = new sqlite3.Database(
-      process.env.DATABASE,
-      sqlite3.OPEN_READONLY,
-      (err) => {
-        if (err) {
-          console.error("Error al conectar con la base de datos:", err.message);
-          return res
-            .status(500)
-            .send("Error al conectar con la base de datos.");
-        }
-      }
-    );
-
     const query = `SELECT * FROM "Game_table"
        where createdAt >= ? AND createdAt <= ?
        ORDER BY createdAt DESC`;
-
     db.all(query, [fechaIni, fechafin], (err, rows) => {
       if (err) {
         console.error("Error al ejecutar la consulta:", err.message);
@@ -75,18 +68,6 @@ app.post("/", (req, res) => {
           "Demasiados datos para procesar. Por favor, reduce el rango de fechas."
         );
       }
-
-      // Cerrar la conexión a la base de datos
-      db.close((closeErr) => {
-        if (closeErr) {
-          console.error(
-            "Error al cerrar la conexión a la base de datos:",
-            closeErr.message
-          );
-        } else {
-          console.log("Conexión a la base de datos cerrada correctamente.");
-        }
-      });
     });
   } else {
     res.render("index", { items: [] });
@@ -216,18 +197,6 @@ app.post("/stats", (req, res) => {
   res.send({ result: result, stat: true });
 });
 
-app.post("/statsAll", (req, res) => {
-  const { ruleta, porcentajes, cantidades } =
-    obtenerValoresDeNumerosIndividuales(datosRaw, 10);
-
-  const result = ruleta.map((num, index) => ({
-    ruleta: num,
-    porcentaje: porcentajes[index],
-    cantidad: cantidades[index],
-  }));
-  res.send({ result: result, stat: true });
-});
-
 const procesarDatosDeUnDiaRawParaPresentar = (items) => {
   items = items.map((item) => ({
     id: item.fecha[0],
@@ -265,10 +234,8 @@ const obtenerValoresDeNumerosIndividuales = (vectorDeVectores, j) => {
     if (typeof vector.winNumber === "number") {
       if (vector.winNumber >= 0 && vector.winNumber <= 36) {
         cantidades[vector.winNumber] += 1;
-        porcentajes[vector.winNumber] = (
-          (cantidades[vector.winNumber] / vectorDeVectores.length) *
-          100
-        ).toFixed(2);
+        porcentajes[vector.winNumber] =
+          cantidades[vector.winNumber] / vectorDeVectores.length;
       }
     }
   });

@@ -1,0 +1,101 @@
+body {
+  font-family: "Arial", sans-serif;
+  background-color: var(--color-secondary);
+  color: var(--color-quinary);
+  justify-self: center;
+  height: 100vh;
+  width: 80%;
+  box-sizing: border-box;
+  margin: 0 auto;
+}
+
+.page-button {
+  align-self: center;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  gap: 5px;
+}
+
+:root {
+  --color-primary: #fe7743;
+  --color-secondary: #273f4f;
+  --color-tertiary: #7d7d7d;
+  --color-quaternary: #447d9b;
+  --color-quinary: #d7d7d7;
+}
+
+footer {
+  /* position: fixed; */
+  bottom: 0;
+  padding: 10px 0;
+  justify-self: center;
+  box-sizing: border-box;
+  width: 100%;
+  background-color: var(--color-tertiary);
+  color: var(--color-quinary);
+}
+
+.search-form,
+.search-form label {
+  gap: 10px;
+  display: flex;
+  justify-self: center;
+  justify-items: center;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+label {
+  margin-left: 10px;
+}
+
+table {
+  border-collapse: collapse;
+  color: var(--color-secondary);
+  background-color: var(--color-tertiary);
+  width: 100%;
+  margin-top: 20px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 12px;
+}
+
+th {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+tr:hover {
+  background-color: var(--color-primary);
+}
+
+h1 {
+  text-align: center;
+  font-size: 24px;
+  color: #1a1a1a;
+  margin-top: 20px;
+}
+
+.styled-table {
+  border-collapse: collapse;
+  margin: 25px 0;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  min-width: 400px;
+  border-radius: 5px 5px 0 0;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
