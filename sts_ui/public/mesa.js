@@ -2,14 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let maxDefault = 5;
   let cantidades = [];
   let ruleta = [];
+  let porcentajes = [];
   let datosConcretadosParaGrafica = [];
-  fetchCantidades();
 
-  $("#tablaDias").on("click", ".btn-Stats", function () {
-    fetchCantidades();
-  });
-
-  async function fetchCantidades() {
+  window.fetchCantidades = async function fetchCantidades() {
     let data = await fetch("/cantidades", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -17,64 +13,50 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     data = await data.json();
+    // console.log("data radar", data);
+
     cantidades = data.map((item) => item.cantidad);
     ruleta = data.map((item) => item.ruleta);
     ruleta = rotarVector(ruleta, -1).reverse();
     datosConcretadosParaGrafica = data.map((item) => ({ ...item }));
     datosConcretadosParaGrafica.sort((a, b) => a.ruleta - b.ruleta);
-    console.log("datosConcretadosParaGrafica", datosConcretadosParaGrafica);
+    // console.log("datosConcretadosParaGrafica", datosConcretadosParaGrafica);
 
     maxDefault = Math.max(...cantidades);
     if (cantidades.length > 0) {
       updateChartOptions();
     }
-  }
+  };
+
+  window.fetchCantidadesAll = async function fetchCantidadesAll() {
+    let data = await fetch("/statsAll", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // body: JSON.stringify({ fecha: "01/01/2024", dias: 1 }), // Fecha de ejemplo
+    });
+    data = await data.json();
+    // console.log("data", data);
+    cantidades = data.result.map((item) => item.cantidad);
+    // console.log(" cantidades", cantidades);
+    ruleta = data.result.map((item) => item.ruleta);
+    ruleta = rotarVector(ruleta, -1).reverse();
+    porcentajes = data.result.map((item) => item.porcentaje);
+    datosConcretadosParaGrafica = data.result.map((item) => ({ ...item }));
+    datosConcretadosParaGrafica.sort((a, b) => a.ruleta - b.ruleta);
+    // console.log("datosConcretadosParaGrafica", datosConcretadosParaGrafica);
+    maxDefault = Math.max(...cantidades);
+    if (cantidades.length > 0) {
+      updateChartOptions();
+    }
+  };
+
+  // fetchCantidades();
+
   let minDefault = 0;
 
   let appPolarData = {
-    namedata: [
-      "0",
-      "26",
-      "3",
-      "35",
-      "12",
-      "28",
-      "7",
-      "29",
-      "18",
-      "22",
-      "9",
-      "31",
-      "14",
-      "20",
-      "1",
-      "33",
-      "16",
-      "24",
-      "5",
-      "10",
-      "23",
-      "8",
-      "30",
-      "11",
-      "36",
-      "13",
-      "27",
-      "6",
-      "34",
-      "17",
-      "25",
-      "2",
-      "21",
-      "4",
-      "19",
-      "15",
-      "32",
-    ],
-    dataSet: [
-      4, 2, 4, 2, 5, 0, 2, 1, 2, 4, 6, 4, 3, 9, 8, 6, 5, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ],
+    namedata: ["0", "26", "3", "35", "12", "28", "7", "29", "18", "22", "9", "31", "14", "20", "1", "33", "16", "24", "5", "10", "23", "8", "30", "11", "36", "13", "27", "6", "34", "17", "25", "2", "21", "4", "19", "15", "32"],
+    dataSet: [4, 2, 4, 2, 5, 0, 2, 1, 2, 4, 6, 4, 3, 9, 8, 6, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   };
 
   let chartDom = document.getElementById("chart-container");
@@ -95,19 +77,11 @@ document.addEventListener("DOMContentLoaded", () => {
           // Combina los valores de la ruleta con los datos
           const columna1 = datos
             .slice(0, mitad)
-            .map(
-              (valor, index) =>
-                `${datosConcretadosParaGrafica[index].ruleta}: ${datosConcretadosParaGrafica[index].cantidad}`
-            )
+            .map((valor, index) => `${datosConcretadosParaGrafica[index].ruleta}: ${datosConcretadosParaGrafica[index].cantidad}`)
             .join("<br>");
           const columna2 = datos
             .slice(mitad)
-            .map(
-              (valor, index) =>
-                `${datosConcretadosParaGrafica[index + mitad].ruleta}: ${
-                  datosConcretadosParaGrafica[index + mitad].cantidad
-                }`
-            )
+            .map((valor, index) => `${datosConcretadosParaGrafica[index + mitad].ruleta}: ${datosConcretadosParaGrafica[index + mitad].cantidad}`)
             .join("<br>");
 
           return `<div style="text-align: left;"> 
@@ -361,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
         center: ["50%", "50%"],
         shape: "circle", //para que sea circular
-        splitNumber: maxDefault / (maxDefault / 7), //numero de circulos
+        splitNumber: maxDefault / (maxDefault / 10), //numero de circulos
         axisName: {
           color: "rgb(238, 097, 102)", //cambia el color del texto de los indicadores
         },
@@ -408,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Aplica las opciones al gráfico
     option && myChart.setOption(option); // 'true' para no mergear con opciones anteriores y limpiar
+    $("#chart-container").addClass("chart-container");
   }
 
   function rotarVector(vector, veces) {
@@ -425,22 +400,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function exportTableAndChart(statData) {
     // Calcular el total de apariciones
-    const totalApariciones = statData.reduce(
-      (sum, row) => sum + row.cantidad,
-      0
-    );
+    const totalApariciones = statData.reduce((sum, row) => sum + row.cantidad, 0);
 
     // Exportar tabla
     const csvContent = statData
       .map((row, index) => {
-        const porcentaje =
-          ((row.cantidad / totalApariciones) * 100).toFixed(2) + "%";
+        const porcentaje = ((row.cantidad / totalApariciones) * 100).toFixed(2) + "%";
         if (index === 0) {
           // Si es la primera fila, incluir encabezados
-          return (
-            "numero;cantidad;porcentaje\n" +
-            `${Object.values(row).join(";")};${porcentaje}`
-          );
+          return "numero;cantidad;porcentaje\n" + `${Object.values(row).join(";")};${porcentaje}`;
         } else {
           // Para las demás filas, incluir los valores y el porcentaje
           return `${Object.values(row).join(";")};${porcentaje}`;

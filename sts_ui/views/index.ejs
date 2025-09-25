@@ -123,7 +123,7 @@
                     <%}%>
             </div>
 
-            <div id="tablaDe1DiaSection">
+            <div>
                 <% if ( items && items.length> 0) { %>
                     <table id="tablaDe1Dia" class="display">
                     </table>
@@ -135,16 +135,19 @@
                     <% if (typeof stat !=="undefined" && stat ){ %>
                         <div id="chart-container" data-result='<%= stat %>'></div>
                         <script src="/mesa.js" type="module"></script>
+                        <!-- <script src="/script.js" type="module"></script> -->
                         <%} %>
                 </div>
-                <div id="tablaDeParesImparesSection">
+                <div>
                     <% if ( typeof stat !=="undefined" && stat) { %>
                         <table id="tablaDeParesImpares" class="display compact">
                         </table>
+                        <!-- <button class="btn-exportNumerosPerdidos" data-stat='<%- JSON.stringify(stat) %>'>Exportar
+                            Tabla y Gráfico</button> -->
                         <script src="/statPorAreasDeTapete.js" type="module" defer></script>
                         <%} %>
                 </div>
-                <div id="tablaDeNumerosGanadoresSeccion">
+                <div>
                     <% if ( typeof stat !=="undefined" && stat) { %>
                         <table id="tablaDeNumerosGanadores" class="display">
                         </table>

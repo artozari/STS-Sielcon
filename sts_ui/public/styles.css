@@ -16,7 +16,7 @@
 .tablaCss {
   width: 100%;
   border: 10px solid var(--color-quinary);
-  border-radius: 0 0 10px 10px;
+  border-radius: 10px;
 }
 
 
@@ -96,11 +96,10 @@ table {
 
 .fechaDetalle {
   text-align: center;
-  font-size: 1.4em;
+  font-size: 1.2em;
   margin: 0px 0;
   background-color: var(--color-primary);
   color: var(--color-quinary);
-  border: 3px solid var(--color-quinary);
 }
 
 .btn-exportJuegosDelDia {

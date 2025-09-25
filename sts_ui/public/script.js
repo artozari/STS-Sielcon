@@ -1,21 +1,16 @@
 //--> desde aqui la carga de la pagina
 
-let languageDE = "./es-Ar.json";
-
 document.addEventListener("DOMContentLoaded", () => {
   const items = JSON.parse(document.querySelector("script[data-items]").dataset.items);
 
   //   console.log("Items cargados desde el servidor:", items);
 
   let table = new DataTable("#tablaDias", {
-    language: {
-      url: languageDE,
-    },
     destroy: true, // Permitir la reinitialización
     data: items,
     order: [], // Deshabilitar el ordenamiento inicial
     columns: [
-      { data: "date", title: "Fecha" },
+      { data: "date", title: "Fecha", orderable: false },
       { data: "cantidad", title: "Cantidad de Juegos" },
       { data: "promedioRpm", title: "Promedio RPM" },
       { data: "juegoFin", title: "Juego Inicial" },
@@ -62,7 +57,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
   });
-  // $("#tablaDias").addClass("fechaDetalle");
 });
 
 $("#tablaDias").on("click", ".btn-detalleDia", function () {
@@ -73,7 +67,6 @@ $("#tablaDias").on("click", ".btn-detalleDia", function () {
 });
 
 $("#tablaDias").on("click", ".btn-Stats", function () {
-  //--> este completado, falta la fecha del cuadro de cantidades de cada numero que reciba por fetch
   const btn = this;
   const fecha = btn.getAttribute("data-id");
 
@@ -90,21 +83,13 @@ const datosDe1Dia = async (fecha) => {
   })
     .then((response) => response.json())
     .then((data) => {
+      // Destruir la instancia previa de DataTables si existe
       if ($.fn.DataTable.isDataTable("#tablaDe1Dia")) {
-        document.querySelector("#tablaDe1Dia_wrapper").remove();
-        document.querySelector(".btn-exportJuegosDelDia").remove();
-        const nuevaTabla = document.createElement("table");
-        nuevaTabla.id = "tablaDe1Dia";
-        nuevaTabla.classList.add("display");
-        const contenedorPadre = document.getElementById("tablaDe1DiaSection"); // Ajusta el ID del contenedor según tu estructura
-        contenedorPadre.appendChild(nuevaTabla);
+        $("#tablaDe1Dia").DataTable().destroy();
       }
 
       // Inicializar la tabla nuevamente
-      const tabla = new DataTable("#tablaDe1Dia", {
-        language: {
-          url: languageDE,
-        },
+      new DataTable("#tablaDe1Dia", {
         destroy: true, // Permitir la reinitialización
         data: data.items,
         columns: [
@@ -115,26 +100,19 @@ const datosDe1Dia = async (fecha) => {
           { data: "clockwise", title: "Clockwise" },
         ],
       });
-      $("#tablaDe1Dia").on("init.dt", function () {
-        const searchContainer = document.querySelector("#tablaDe1Dia_wrapper");
-        if (searchContainer) {
-          const divFecha = document.createElement("div");
-          divFecha.classList.add("fechaDetalle");
-          divFecha.textContent = `Juegos del día ${data.fecha}`;
-          const soloTabla = document.querySelector("#tablaDe1Dia");
-          soloTabla.insertAdjacentElement("beforebegin", divFecha);
-          $("#tablaDe1Dia").addClass("tablaCss");
-        } else {
-          console.error("El contenedor #tablaDe1Dia_wrapper no se generó correctamente.");
-        }
-      });
+      $("#tablaDe1Dia").addClass("tablaCss");
+
+      const divFecha = document.createElement("div");
+      divFecha.classList.add("fechaDetalle");
+      divFecha.textContent = `Juegos del día ${data.fecha}`;
+      document.getElementById("tablaDe1Dia").parentElement.insertBefore(divFecha, document.getElementById("tablaDe1Dia"));
 
       if (!document.querySelector(".btn-exportJuegosDelDia")) {
         const btnExport = document.createElement("button");
         btnExport.classList.add("btn-exportJuegosDelDia");
         btnExport.textContent = "Exportar CSV";
         btnExport.setAttribute("data-items", JSON.stringify(data));
-        document.getElementById("tablaDe1Dia").parentElement.insertBefore(btnExport, document.getElementById("tablaDe1Dia").nextSibling);
+        document.getElementById("tablaDe1Dia_wrapper").parentElement.insertBefore(btnExport, document.getElementById("tablaDe1Dia_wrapper").nextSibling);
 
         document.querySelector(".btn-exportJuegosDelDia").addEventListener("click", function () {
           const items = JSON.parse(this.getAttribute("data-items"));
@@ -191,26 +169,14 @@ window.mostrarEstadisticas = function mostrarEstadisticas(fecha) {
   })
     .then((response) => response.json())
     .then((data) => {
+      // console.log("Estadísticas recibidas:", data);
       data.result = data.result.map((item) => {
         const totalCantidades = data.result.reduce((acum, curr) => acum + curr.cantidad, 0);
         const porcentaje = (item.cantidad * 100) / totalCantidades;
         return { ...item, porcentaje: porcentaje.toFixed(2) };
       });
       if (data.result.length > 0) {
-        if ($.fn.DataTable.isDataTable("#tablaDeNumerosGanadores")) {
-          document.querySelector("#tablaDeNumerosGanadores_wrapper").remove();
-          document.querySelector(".btn-exportNumerosGanadores").remove(); //-->
-          const nuevaTabla = document.createElement("table");
-          nuevaTabla.id = "tablaDeNumerosGanadores";
-          nuevaTabla.classList.add("display");
-          const contenedorPadre = document.getElementById("tablaDeNumerosGanadoresSeccion");
-          contenedorPadre.appendChild(nuevaTabla);
-        }
-
         new DataTable("#tablaDeNumerosGanadores", {
-          language: {
-            url: languageDE,
-          },
           destroy: true, // Permitir la reinitialización
           data: data.result,
           columns: [
@@ -219,19 +185,7 @@ window.mostrarEstadisticas = function mostrarEstadisticas(fecha) {
             { data: "cantidad", title: "Cantidad de Veces" },
           ],
         });
-        $("#tablaDeNumerosGanadores").on("init.dt", function () {
-          const searchContainer = document.querySelector("#tablaDeNumerosGanadores_wrapper");
-          if (searchContainer) {
-            const divFecha = document.createElement("div");
-            divFecha.classList.add("fechaDetalle");
-            divFecha.textContent = `Juegos del día ${data.fecha}`;
-            const soloTabla = document.querySelector("#tablaDeNumerosGanadores");
-            soloTabla.insertAdjacentElement("beforebegin", divFecha);
-            $("#tablaDeNumerosGanadores").addClass("tablaCss");
-          } else {
-            console.error("El contenedor #tablaDe1Dia_wrapper no se generó correctamente.");
-          }
-        });
+        $("#tablaDeNumerosGanadores").addClass("tablaCss");
 
         // Agregar botón de exportación después de la tabla
         if (!document.querySelector(".btn-exportNumerosGanadores")) {
@@ -270,12 +224,6 @@ window.mostrarEstadisticasAll = function mostrarEstadisticasAll() {
       if (data.result.length > 0) {
         new DataTable("#tablaDeNumerosGanadores", {
           destroy: true, // Permitir la reinitialización
-          info: false,
-          ordering: false,
-          // paging: false,
-          searching: false,
-          lengthMenu: [5, 10, 25, 50, -1],
-          pageLength: 15,
           data: data.result,
           columns: [
             { data: "ruleta", title: "Número" },
@@ -284,11 +232,6 @@ window.mostrarEstadisticasAll = function mostrarEstadisticasAll() {
           ],
         });
         $("#tablaDeNumerosGanadores").addClass("tablaCss");
-
-        const divFecha = document.createElement("div");
-        divFecha.classList.add("fechaDetalle");
-        divFecha.textContent = `Cantidades de Numeros Ganadores Totales`;
-        document.getElementById("tablaDeNumerosGanadores").parentElement.insertBefore(divFecha, document.getElementById("tablaDeNumerosGanadores"));
 
         if (!document.querySelector(".btn-exportNumerosGanadores")) {
           const btnExport = document.createElement("button");
@@ -415,10 +358,6 @@ window.mostrarEstadisticasTapeteAll = function mostrarEstadisticasTapeteAll() {
         ],
       });
       $("#tablaDeParesImpares").addClass("tablaCss");
-      const divFecha = document.createElement("div");
-      divFecha.classList.add("fechaDetalle");
-      divFecha.textContent = `Datos de Areas Ganadores Totales`;
-      document.getElementById("tablaDeParesImpares").parentElement.insertAdjacentElement("afterend", divFecha).nextSibling;
     })
     .catch((error) => {
       console.error("Error al obtener las estadísticas:", error);

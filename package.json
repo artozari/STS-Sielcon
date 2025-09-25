@@ -4,7 +4,8 @@
   "description": "Sistema de revicion y analisis de juegos de la maquina",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon --watch app.js "
+    "start": "node app.js ",
+    "dev": "nodemon --watch app.js "
   },
   "author": "Sielcon",
   "license": "ISC",
