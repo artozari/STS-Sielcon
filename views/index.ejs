@@ -44,9 +44,15 @@
                     <img src="./logo_sielcon_page.png" alt="" srcset="">
                     <p>Sign Table System</p>
                 </div>
-                <h1 class="header-title" data-tableNumber="<%- JSON.stringify(tableNumber) %>">
-                    STS MESA: <%= tableNumber %>
-                </h1>
+                <% if (tableNumber !==undefined) { %>
+                    <h1 class="header-title" data-tableNumber="<%= JSON.stringify(tableNumber) %>">
+                        STS MESA: <%= tableNumber %>
+                    </h1>
+                    <% } else { %>
+                        <h1 class="header-title">
+                            STS MESA
+                        </h1>
+                        <% } %>
             </div>
             <div class="blob"></div>
         </div>
