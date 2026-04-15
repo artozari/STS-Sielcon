@@ -50,8 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // fetchCantidades();
-
   let minDefault = 0;
 
   let appPolarData = {

@@ -1,3 +1,7 @@
+let dbName = document.querySelector("header h1").getAttribute("data-dbname");
+let dbShortName = document.querySelector("header h1").getAttribute("data-dbshortname");
+let tableNumber = document.querySelector("header h1").getAttribute("data-tableNumber");
+
 document.addEventListener("DOMContentLoaded", () => {
   let maxDefault = 5;
   let cantidades = [];
@@ -50,8 +54,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // fetchCantidades();
-
   let minDefault = 0;
 
   let appPolarData = {
@@ -67,34 +69,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateChartOptions() {
     const option = {
-      backgroundColor: "rgba(110,110,110,0)",
-      tooltip: {
-        trigger: "item",
-        formatter: function (params) {
-          const datos = params.data.value;
-          const mitad = Math.ceil(datos.length / 2);
+      backgroundColor: "rgba(0,0,0,0.8)",
+      // tooltip: {
+      //   trigger: "item",
+      //   formatter: function (params) {
+      //     const datos = params.data.value;
+      //     const mitad = Math.ceil(datos.length / 2);
 
-          // Combina los valores de la ruleta con los datos
-          const columna1 = datos
-            .slice(0, mitad)
-            .map((valor, index) => `${datosConcretadosParaGrafica[index].ruleta}: ${datosConcretadosParaGrafica[index].cantidad}`)
-            .join("<br>");
-          const columna2 = datos
-            .slice(mitad)
-            .map((valor, index) => `${datosConcretadosParaGrafica[index + mitad].ruleta}: ${datosConcretadosParaGrafica[index + mitad].cantidad}`)
-            .join("<br>");
+      //     // Combina los valores de la ruleta con los datos
+      //     const columna1 = datos
+      //       .slice(0, mitad)
+      //       .map((valor, index) => `${datosConcretadosParaGrafica[index].ruleta}: ${datosConcretadosParaGrafica[index].cantidad}`)
+      //       .join("<br>");
+      //     const columna2 = datos
+      //       .slice(mitad)
+      //       .map((valor, index) => `${datosConcretadosParaGrafica[index + mitad].ruleta}: ${datosConcretadosParaGrafica[index + mitad].cantidad}`)
+      //       .join("<br>");
 
-          return `<div style="text-align: left;"> 
-          <p style="font-weight: bold; padding-bottom: 10px">Cantidades:</p>
-          <div style="display: flex; gap: 20px;">
-          <div>${columna1}</div>
-          <div>${columna2}</div>
-          </div>
-          </div>`;
-        },
-      },
+      //     return `<div style="text-align: left;">
+      //     <p style="font-weight: bold; padding-bottom: 10px">Cantidades:</p>
+      //     <div style="display: flex; gap: 20px;">
+      //     <div>${columna1}</div>
+      //     <div>${columna2}</div>
+      //     </div>
+      //     </div>`;
+      //   },
+      // },
       title: {
-        text: "PESO DEl PLATO",
+        text: "PESO DEL PLATO",
       },
       legend: {
         data: ["ganado"],
@@ -103,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       toolbox: {
         show: true,
         feature: {
-          dataView: { readOnly: false },
+          // dataView: { readOnly: false },
           saveAsImage: {},
         },
       },
@@ -364,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       series: [
         {
-          name: "PESO DEl PLATO",
+          name: "PESO DEL PLATO",
           type: "radar",
           areaStyle: {
             color: "#00B0AA",
@@ -382,7 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Aplica las opciones al gráfico
     option && myChart.setOption(option); // 'true' para no mergear con opciones anteriores y limpiar
-    $("#chart-container").addClass("chart-container");
+    // $("#chart-container").addClass("chart-container");
   }
 
   function rotarVector(vector, veces) {
@@ -391,47 +393,41 @@ document.addEventListener("DOMContentLoaded", () => {
     return vector.slice(-rotaciones).concat(vector.slice(0, -rotaciones));
   }
 
-  document.addEventListener("click", (event) => {
-    if (event.target.classList.contains("btn-exportNumerosGanadores")) {
-      const statData = datosConcretadosParaGrafica;
-      exportTableAndChart(statData);
-    }
-  });
-
-  function exportTableAndChart(statData) {
-    // Calcular el total de apariciones
+  window.exportTableAndChart = function exportTableAndChart(statData) {
     const totalApariciones = statData.reduce((sum, row) => sum + row.cantidad, 0);
+    const titleMain = `Numeros Ganadores de la Mesa: ${tableNumber}`;
+    // console.log("statData", statData);
 
-    // Exportar tabla
     const csvContent = statData
       .map((row, index) => {
         const porcentaje = ((row.cantidad / totalApariciones) * 100).toFixed(2) + "%";
         if (index === 0) {
           // Si es la primera fila, incluir encabezados
-          return "numero;cantidad;porcentaje\n" + `${Object.values(row).join(";")};${porcentaje}`;
+          return "Numero;Porcentaje;Cantidad\n" + `${Object.values(row).join(";")}`;
         } else {
           // Para las demás filas, incluir los valores y el porcentaje
-          return `${Object.values(row).join(";")};${porcentaje}`;
+          return `${Object.values(row).join(";")}`;
         }
       })
       .join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([titleMain + "\n" + csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "numeros_ganadores.csv";
     link.click();
+  };
 
-    // Exportar gráfico
-    myChart
-      .getDataURL({
-        type: "png",
-        backgroundColor: "#fff",
-      })
-      .then((imageURL) => {
-        const imgLink = document.createElement("a");
-        imgLink.href = imageURL;
-        imgLink.download = "grafico.png";
-        imgLink.click();
-      });
-  }
+  // document.addEventListener("click", (event) => {
+  //   if (event.target.classList.contains("btn-exportNumerosGanadores")) {
+  //     const statData = datosConcretadosParaGrafica;
+  //     exportTableAndChart(statData);
+  //   }
+  // });
 });
+
+function convertirMilisegundosAFechas(milisegundos) {
+  return milisegundos.map((ms) => {
+    const fecha = new Date(ms);
+    return `${fecha.toLocaleDateString()} ${fecha.toLocaleTimeString()}`;
+  });
+}

@@ -7,20 +7,88 @@
     <title>Document</title>
     <link rel="stylesheet" href="/styles.css">
     <link rel="stylesheet" href="/datatables.css">
+    <link href="/datatables.css" rel="stylesheet">
+    <script src="/dataTables.js"></script>
     <script src="/echart.min.js" defer></script>
 </head>
 
 <body>
-    <header class="header">
-        <h1>Sts</h1>
+    <header>
+        <div class="card">
+            <div class="bg">
+                <div class="rellenoIzquierdo">
+                    <p>
+                        <span id="fechaActual" class="fechaActual"></span>
+                        <script>
+                            const actualizarFecha = () => {
+                                const fechaActualElement = document.querySelector("#fechaActual");
+                                const fecha = new Date();
+                                fechaActualElement.innerText = new Intl.DateTimeFormat('default', { year: 'numeric', month: 'short', day: 'numeric' }).format(fecha);
+                            }
+                            setInterval(actualizarFecha, 1000);
+                        </script>
+                    </p>
+                    <p>
+                        <span id="horaActual" class="horaActual"></span>
+                        <script>
+                            const actualizarHora = () => {
+                                const horaActualElement = document.querySelector("#horaActual");
+                                const fecha = new Date();
+                                horaActualElement.innerText = new Intl.DateTimeFormat('default', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(fecha);
+                            }
+                            setInterval(actualizarHora, 1000);
+                        </script>
+                    </p>
+                </div>
+                <div class="logo-container">
+                    <img src="./logo_sielcon_page.png" alt="" srcset="">
+                    <p>Sign Table System</p>
+                </div>
+                <h1 class="header-title" data-tableNumber="<%- JSON.stringify(tableNumber) %>">
+                    STS MESA: <%= tableNumber %>
+                </h1>
+            </div>
+            <div class="blob"></div>
+        </div>
     </header>
     <main>
         <form class="search-form formBusqueda" action="/" method="post">
             <div class="busquedaManualContainer">
                 <div>
-                    <label for="fecha">Fecha De Inicio:</label>
-                    <input type="date" name="fecha">
+                    <h2>Buscar Por Rango de Fechas</h2>
                 </div>
+                <div>
+                    <label for="fecha">Fecha De Inicio:</label>
+                    <input type="date" id="fecha" name="fecha" value="">
+                </div>
+                <div>
+                    <label for="fechaFin">Fecha De Fin:</label>
+                    <input type="date" id="fechaFin" name="fechaFin" value="">
+                </div>
+                <script>
+
+                    let days;
+                    const calcularDias = () => {
+                        const fecha = document.querySelector("#fecha");
+                        const fechaFin = document.querySelector("#fechaFin");
+                        const startDate = new Date(fecha.value);
+                        const endDate = new Date(fechaFin.value);
+                        const difference = endDate - startDate;
+                        days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+                    }
+
+                    document.querySelector("#fechaFin").addEventListener("change", function () {
+                        calcularDias();
+                        // this.setAttribute("value", days + 1);
+                        const daysOption = document.createElement("option");
+                        daysOption.text = `${days + 1} dias seleccionados`;
+                        daysOption.value = days + 1;
+                        console.log(daysOption.value);
+                        const select = document.querySelector("#tiempo");
+                        select.insertBefore(daysOption, select.firstChild);
+                        daysOption.selected = true;
+                    });
+                </script>
                 <div>
 
                     <label for="tiempo">Tiempo:</label>
@@ -34,6 +102,7 @@
                         <option value="365">1 año</option>
                     </select>
                     <button type="submit">Buscar</button>
+                    <button type="button" class="btn-exportarGlobal">Exportar CSV</button>
                 </div>
             </div>
             <div class="busquedaRapidasContainer">
@@ -61,13 +130,12 @@
                         document.querySelectorAll(".quick-search").forEach((button) => {
                             button.addEventListener("click", () => {
                                 const days = parseInt(button.getAttribute("data-days"), 10); // Obtener los días del botón
-                                console.log("Days selected:", days);
 
                                 const today = new Date();
                                 const startDate = new Date(today);
 
                                 // Calcular la fecha de inicio (días hacia atrás)
-                                startDate.setDate(today.getDate() - days);
+                                startDate.setDate(today.getDate() - days + 1);
 
                                 // Formatear la fecha en formato YYYY-MM-DD
                                 const formattedStartDate = startDate.toISOString().split("T")[0];
@@ -79,7 +147,6 @@
 
                                 fechaInput.value = formattedStartDate; // Establecer la fecha de inicio
                                 tiempoSelect.value = days; // Establecer el rango de días
-                                console.log("Fecha seleccionada:", formattedStartDate);
 
                                 // Enviar el formulario
                                 form.submit();
@@ -146,7 +213,7 @@
                 </div>
                 <div id="tablaDeNumerosGanadoresSeccion">
                     <% if ( typeof stat !=="undefined" && stat) { %>
-                        <table id="tablaDeNumerosGanadores" class="display">
+                        <table id="tablaDeNumerosGanadores" class="display  nowrap">
                         </table>
                         <%} %>
 
@@ -157,6 +224,23 @@
     <footer>
         <p>&copy; 2025 Sielcon</p>
     </footer>
+    <!-- <script>
+        // Guardar las fechas en localStorage antes de enviar el formulario
+        document.querySelector(".search-form").addEventListener("submit", function () {
+            const fecha = document.querySelector("#fecha").value;
+            const fechaFin = document.querySelector("#fechaFin").value;
+            localStorage.setItem("fecha", fecha);
+            localStorage.setItem("fechaFin", fechaFin);
+        });
+
+        // Restaurar las fechas desde localStorage al cargar la página
+        document.addEventListener("DOMContentLoaded", function () {
+            const fecha = localStorage.getItem("fecha");
+            const fechaFin = localStorage.getItem("fechaFin");
+            if (fecha) document.querySelector("#fecha").value = fecha;
+            if (fechaFin) document.querySelector("#fechaFin").value = fechaFin;
+        });
+    </script> -->
 </body>
 
 </html>

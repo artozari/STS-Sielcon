@@ -81,15 +81,24 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     if ($.fn.DataTable.isDataTable("#tablaDeParesImpares")) {
-      $("#tablaDeParesImpares").DataTable().destroy();
+      document.querySelector("#tablaDeParesImpares_wrapper").remove();
+      const nuevaTabla = document.createElement("table");
+      nuevaTabla.id = "tablaDeParesImpares";
+      nuevaTabla.classList.add("display", "compact");
+      const contenedorPadre = document.getElementById("tablaDeParesImparesSection"); // Ajusta el ID del contenedor según tu estructura
+      contenedorPadre.appendChild(nuevaTabla);
     }
+
     new DataTable("#tablaDeParesImpares", {
+      language: {
+        url: languageDE,
+      },
       destroy: true, // Permitir la reinitialización
       info: false,
-      ordering: false,
-      // paging: false,
+      ordering: true,
+      paging: false,
       searching: false,
-      lengthMenu: [5, 10, 25, 50, -1],
+      lengthMenu: [5, 10, 25, 50],
       pageLength: 15,
       data: items,
       columns: [
@@ -98,6 +107,19 @@ document.addEventListener("DOMContentLoaded", () => {
         { data: "porcentaje", title: "Porcentaje" },
       ],
     });
-    $("#tablaDeParesImpares").addClass("tablaCss");
+
+    $("#tablaDeParesImpares").on("init.dt", function () {
+      const searchContainer = document.querySelector("#tablaDeParesImpares_wrapper");
+      if (searchContainer) {
+        const divFecha = document.createElement("div");
+        divFecha.classList.add("fechaDetalle");
+        divFecha.textContent = `Juegos del día ${data.items.fecha}`;
+        const soloTabla = document.querySelector("#tablaDeParesImpares");
+        soloTabla.insertAdjacentElement("beforebegin", divFecha);
+        $("#tablaDeParesImpares").addClass("tablaCss");
+      } else {
+        console.error("El contenedor #tablaDeParesImpares_wrapper no se generó correctamente.");
+      }
+    });
   };
 });
