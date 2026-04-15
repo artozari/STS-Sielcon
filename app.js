@@ -29,10 +29,21 @@ let datosDeRangoDeDias;
 let datosDeUnDia;
 let datosResult = [];
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
     dbName = dbName || "Mesa Principal";
     dbShortName = dbShortName || "MP";
-    tableNumber = tableNumber || 8;
+
+    // Obtener el ID de la mesa desde la API
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/table`);
+        if (response.data && response.data.length > 0) {
+            tableNumber = response.data[0].id || response.data[0].tableNumber || 0;
+            console.log("Número de mesa cargado:", tableNumber);
+        }
+    } catch (err) {
+        console.error("Error al obtener las mesas:", err.message);
+        // Si falla, mantiene el tableNumber anterior
+    }
 
     res.render("index", {
         dbName: dbName,
@@ -71,6 +82,13 @@ app.post("/", async (req, res) => {
             if (Array.isArray(rows) && rows.length <= 500000) {
                 const cantDatos = rows.length;
                 datosRaw = rows;
+
+                // Extraer tableNumber del primer registro
+                if (rows[0] && rows[0].tableId) {
+                    tableNumber = rows[0].tableId;
+                    console.log("Número de mesa actualizado a:", tableNumber);
+                }
+
                 console.log("Datos obtenidos:", cantDatos);
                 console.log("Primer registro:", JSON.stringify(rows[0], null, 2));
 
