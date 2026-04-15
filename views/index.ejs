@@ -10,12 +10,39 @@
     <link href="/datatables.css" rel="stylesheet">
     <script src="/dataTables.js"></script>
     <script src="/echart.min.js" defer></script>
+
 </head>
 
 <body>
     <header>
+        <div class="menu-container">
+            <div class="hamburguer" id="hamburguer">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <ul class="menu-list" id="menu-list">
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/habilitar-maquina">Habilitar Máquina</a></li>
+            </ul>
+
+        </div>
+        <script>
+            const hamburguer = document.getElementById('hamburguer');
+            const menuList = document.getElementById('menu-list');
+
+            hamburguer.addEventListener('click', () => {
+                // Alterna la clase 'active' para rotar el icono
+                hamburguer.classList.toggle('active');
+
+                // Alterna la clase 'show' para mostrar/ocultar la lista
+                menuList.classList.toggle('show');
+            });
+        </script>
         <div class="card">
             <div class="bg">
+
                 <div class="rellenoIzquierdo">
                     <p>
                         <span id="fechaActual" class="fechaActual"></span>

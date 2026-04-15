@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habilitar Máquina - STS</title>
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./css/habilitar-maquina.css">
+</head>
+
+<body>
+    <header>
+        <div class="menu-container">
+            <div class="hamburguer" id="hamburguer">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
+            <ul class="menu-list" id="menu-list">
+                <li><a href="/">Inicio</a></li>
+                <li><a href="/habilitar-maquina">Habilitar Máquina</a></li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="bg">
+                <div class="rellenoIzquierdo">
+                    <p>
+                        <span id="fechaActual" class="fechaActual"></span>
+                        <script>
+                            const actualizarFecha = () => {
+                                const fechaActualElement = document.querySelector("#fechaActual");
+                                const fecha = new Date();
+                                fechaActualElement.innerText = new Intl.DateTimeFormat('default', { year: 'numeric', month: 'short', day: 'numeric' }).format(fecha);
+                            }
+                            setInterval(actualizarFecha, 1000);
+                        </script>
+                    </p>
+                    <p>
+                        <span id="horaActual" class="horaActual"></span>
+                        <script>
+                            const actualizarHora = () => {
+                                const horaActualElement = document.querySelector("#horaActual");
+                                const fecha = new Date();
+                                horaActualElement.innerText = new Intl.DateTimeFormat('default', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(fecha);
+                            }
+                            setInterval(actualizarHora, 1000);
+                        </script>
+                    </p>
+                </div>
+                <div class="logo-container">
+                    <img src="./logo_sielcon_page.png" alt="" srcset="">
+                    <p>Sign Table System</p>
+                </div>
+                <% if (tableNumber !==undefined) { %>
+                    <h1 class="header-title" data-tableNumber="<%= JSON.stringify(tableNumber) %>">
+                        STS MESA: <%= tableNumber %>
+                    </h1>
+                    <% } else { %>
+                        <h1 class="header-title">
+                            STS MESA
+                        </h1>
+                        <% } %>
+            </div>
+            <div class="blob"></div>
+        </div>
+    </header>
+
+    <main>
+        <a href="/" class="btn-back">← Volver</a>
+
+        <div class="machine-form-container">
+            <h2>Control de Máquina</h2>
+
+            <div class="alert success" id="successAlert">
+                <strong>¡Éxito!</strong> <span id="successMessage"></span>
+            </div>
+            <div class="alert error" id="errorAlert">
+                <strong>Error:</strong> <span id="errorMessage"></span>
+            </div>
+
+            <form id="machineForm">
+                <div class="form-group">
+                    <label for="machineId">Número de Máquina:</label>
+                    <input type="number" id="machineId" name="machineId" placeholder="Ej: 1" required min="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="action">Acción:</label>
+                    <select id="action" name="action" required>
+                        <option value="">-- Seleccionar acción --</option>
+                        <option value="enable">Habilitar Máquina</option>
+                        <option value="disable">Deshabilitar Máquina</option>
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-submit">Aplicar Cambios</button>
+                    <button type="reset" class="btn-cancel">Limpiar</button>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Procesando solicitud...</p>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Sielcon</p>
+    </footer>
+
+    <script src="./js/habilitar-maquina.js" defer></script>
+</body>
+
+</html>

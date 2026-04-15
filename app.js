@@ -419,6 +419,42 @@ function obtenerHora0(fecha) {
     return fechaIni;
 }
 
+// Ruta para la página de habilitación de máquina
+app.get("/habilitar-maquina", (req, res) => {
+    res.render("habilitar-maquina", {
+        dbName: dbName || "Mesa Principal",
+        dbShortName: dbShortName || "MP",
+        tableNumber: tableNumber,
+    });
+});
+
+// Ruta POST para procesar la habilitación de máquina
+app.post("/api/habilitar-maquina", async (req, res) => {
+    const { machineId, action } = req.body;
+
+    try {
+        // Aquí iría la lógica para habilitar/deshabilitar la máquina
+        // Por ahora, enviamos un response de éxito
+        const response = await axios.post(`${API_BASE_URL}/api/v1/machine/enable`, {
+            machineId: machineId,
+            action: action, // 'enable' o 'disable'
+        });
+
+        res.json({
+            success: true,
+            message: `Máquina ${action === "enable" ? "habilitada" : "deshabilitada"} correctamente`,
+            data: response.data,
+        });
+    } catch (error) {
+        console.error("Error al habilitar/deshabilitar máquina:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Error al procesar la solicitud",
+            error: error.message,
+        });
+    }
+});
+
 app.listen(app.get("port"), () => {
     console.log(`Server started on port ${app.get("port")}`);
 });

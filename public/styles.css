@@ -313,7 +313,7 @@ footer p {
   align-items: center;
   justify-content: center;
   /* box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff; */
-  ;
+
 }
 
 .bg {
@@ -367,4 +367,85 @@ footer p {
   100% {
     transform: translate(-100%, -100%) translate3d(0, 0, 0);
   }
+}
+
+
+/* Estilo del icono hamburguesa*/
+.hamburguer {
+  padding-right: 30px;
+  width: 30px;
+  height: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: transform 0.4s ease;
+  /* Aquí ocurre la rotación */
+}
+
+.hamburguer span {
+  display: block;
+  height: 4px;
+  width: 100%;
+  background-color: #333;
+  border-radius: 2px;
+}
+
+/* Clase que rotará el icono 90 grados */
+.hamburguer.active {
+  transform: rotate(90deg);
+}
+
+/* Estilo de la lista (oculta por defecto) */
+.menu-list {
+  position: absolute;
+  list-style: none;
+  padding: 15px 0;
+  margin: 0;
+  /* display: none; */
+  background-color: rgba(45, 45, 45, 0.98);
+  border: 2px solid #273f4f;
+  border-radius: 8px;
+  min-width: 200px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  top: 90px;
+  /* left: 0; */
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+/* Mostrar la lista cuando el menú esté activo */
+.menu-list.show {
+  height: auto;
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.menu-list li {
+  margin: 0;
+  padding: 0;
+}
+
+.menu-list li a {
+  display: block;
+  padding: 12px 20px;
+  color: #d7d7d7;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #273f4f;
+}
+
+.menu-list li:last-child a {
+  border-bottom: none;
+}
+
+.menu-list li a:hover {
+  background-color: #273f4f;
+  padding-left: 30px;
+  color: #fff;
 }
