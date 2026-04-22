@@ -1,5 +1,58 @@
-// Controlador del menú hamburguesa
 document.addEventListener("DOMContentLoaded", function () {
+    let codeObtained;
+    let cutOffId;
+    const codeInput1 = document.getElementById("cod1");
+    const codeInput2 = document.getElementById("cod2");
+    const keyInput = document.getElementById("key");
+
+    const errorMessage = document.getElementById("errorMessage");
+
+    fetch("/lastCutOff", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+            if (!data.error) {
+                if (data.enabled) {
+                    console.log("Ya existe un corte de caja para fecha:", new Date(data.enabled.time).toLocaleDateString());
+                    if (errorMessage) {
+                        errorMessage.innerHTML += " <div style='color: green;'>Ya existe un corte de caja para fecha: " + new Date(data.enabled.time).toLocaleDateString() + ".</div>";
+                        errorMessage.classList.add("show");
+                    }
+                } else {
+                    console.log("No hay un corte de caja habilitado actualmente. Asegúrate de habilitar un corte de caja antes de generar un código.");
+                    if (errorMessage) {
+                        errorMessage.innerHTML += "<br><div style='color: red;'>No hay un corte de caja habilitado actualmente.<br>Asegurate de habilitar un corte de caja para que la maquina este disponible.</div>";
+                        errorMessage.classList.add("show");
+                    }
+                }
+                if (!data.disabled) {
+                    console.log("No se encontró un corte de caja pendiente.");
+                    if (errorMessage) {
+                        errorMessage.innerHTML += " <br><div style='color: yellow;'>No se encontró un corte de caja pendiente.</div>";
+                        errorMessage.classList.add("show");
+                    }
+                } else {
+                    console.log("Corte de caja pendiente encontrado:", data.disabled);
+                    if (errorMessage) {
+                        errorMessage.innerHTML += "<br><div style='color: yellow;'>Corte de caja pendiente encontrado.<br>El corte de caja con id " + data.disabled + " se encuentra pendiente</div>";
+                        errorMessage.classList.add("show");
+                    }
+                }
+            }
+            console.log("Último corte:", data);
+            if (data.code) {
+                cutOffId = data.disabled;
+                codeObtained = data.code;
+                codeInput1.value = codeObtained.slice(0, 7);
+                codeInput2.value = codeObtained.slice(7, 14);
+            }
+        });
+
     const hamburguer = document.getElementById("hamburguer");
     const menuList = document.getElementById("menu-list");
 
@@ -9,65 +62,35 @@ document.addEventListener("DOMContentLoaded", function () {
             menuList.classList.toggle("show");
         });
     }
-});
 
-// Manejar el formulario de máquina
-document.addEventListener("DOMContentLoaded", function () {
-    const machineForm = document.getElementById("machineForm");
+    const machineForm = document.getElementById("generateCodeBtn");
+    const saveKeyBtn = document.getElementById("saveKey");
 
     if (machineForm) {
-        machineForm.addEventListener("submit", async (e) => {
+        machineForm.addEventListener("click", async (e) => {
             e.preventDefault();
-
-            const machineId = document.getElementById("machineId").value;
-            const action = document.getElementById("action").value;
-            const loadingDiv = document.getElementById("loading");
-            const successAlert = document.getElementById("successAlert");
-            const errorAlert = document.getElementById("errorAlert");
-            const successMessage = document.getElementById("successMessage");
-            const errorMessage = document.getElementById("errorMessage");
-
-            // Ocultar alertas previas
-            successAlert.classList.remove("show");
-            errorAlert.classList.remove("show");
-
-            // Mostrar loading
-            loadingDiv.style.display = "block";
-
-            try {
-                const response = await fetch("/api/habilitar-maquina", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        machineId: parseInt(machineId),
-                        action: action,
-                    }),
+            const response = await fetch("/generateCode", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({}),
+            });
+            const data = await response.json();
+            console.log("Respuesta del servidor:", data);
+        });
+    }
+    if (saveKeyBtn) {
+        saveKeyBtn.addEventListener("click", async (e) => {
+            e.preventDefault();
+            if (keyInput.value.trim() && cutOffId) {
+                const response = await fetch("/addKey", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ key: keyInput.value, id: cutOffId }),
                 });
-
                 const data = await response.json();
-
-                loadingDiv.style.display = "none";
-
-                if (data.success) {
-                    successMessage.textContent = data.message;
-                    successAlert.classList.add("show");
-                    machineForm.reset();
-
-                    // Auto-ocultar el mensaje después de 5 segundos
-                    setTimeout(() => {
-                        successAlert.classList.remove("show");
-                    }, 5000);
-                } else {
-                    errorMessage.textContent = data.message;
-                    errorAlert.classList.add("show");
-                }
-            } catch (error) {
-                loadingDiv.style.display = "none";
-                errorMessage.textContent = error.message;
-                errorAlert.classList.add("show");
-                console.error("Error:", error);
+                console.log("Respuesta del servidor:", data);
+            } else {
+                alert("El campo de Codigo y Clave no pueden estar vacíos.");
             }
         });
     }

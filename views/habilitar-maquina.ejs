@@ -69,42 +69,45 @@
 
     <main>
         <a href="/" class="btn-back">← Volver</a>
-
         <div class="machine-form-container">
-            <h2>Control de Máquina</h2>
+            <% if (tableNumber !==undefined) { %>
+                <h2>MESA <%= tableNumber %>
+                </h2>
+                <% } else { %>
+                    <h2>MESA</h2>
+                    <% } %>
 
-            <div class="alert success" id="successAlert">
-                <strong>¡Éxito!</strong> <span id="successMessage"></span>
-            </div>
-            <div class="alert error" id="errorAlert">
-                <strong>Error:</strong> <span id="errorMessage"></span>
-            </div>
+                        <form class="machineForm" id="machineForm">
+                            <div class="form-row">
+                                <button type="submit" id="generateCodeBtn" class="btn-generate">
+                                    + GENERAR CODIGO
+                                </button>
 
-            <form id="machineForm">
-                <div class="form-group">
-                    <label for="machineId">Número de Máquina:</label>
-                    <input type="number" id="machineId" name="machineId" placeholder="Ej: 1" required min="1">
-                </div>
+                                <div class="code-group">
+                                    <label>COD:</label>
+                                    <div class="code-inputs-horizontal">
+                                        <input type="text" id="cod1" name="cod1" placeholder="2026-UID234">
+                                        <input type="text" id="cod2" name="cod2" placeholder="KID-UID567">
+                                    </div>
+                                </div>
 
-                <div class="form-group">
-                    <label for="action">Acción:</label>
-                    <select id="action" name="action" required>
-                        <option value="">-- Seleccionar acción --</option>
-                        <option value="enable">Habilitar Máquina</option>
-                        <option value="disable">Deshabilitar Máquina</option>
-                    </select>
-                </div>
+                                <div class="key-group">
+                                    <label>Key:</label>
+                                    <input type="text" id="key" name="key" placeholder="k2026234567">
+                                </div>
 
-                <div class="button-group">
-                    <button type="submit" class="btn-submit">Aplicar Cambios</button>
-                    <button type="reset" class="btn-cancel">Limpiar</button>
-                </div>
+                                <button type="submit" class="btn-save" id="saveKey">Guardar</button>
+                            </div>
 
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>Procesando solicitud...</p>
-                </div>
-            </form>
+                            <div class="error-message" id="errorMessage">
+
+                            </div>
+
+                            <div class="loading" id="loading">
+                                <div class="spinner"></div>
+                                <p>Procesando solicitud...</p>
+                            </div>
+                        </form>
         </div>
     </main>
 

@@ -411,8 +411,6 @@ app.post("/obtenerDatosDeTapeteAll", (req, res) => {
     });
 });
 
-// console.log("Fecha con hora:", obtenerHora0("2025-09-29"));
-
 function obtenerHora0(fecha) {
     let fechaIni = new Date(fecha).getTime();
     fechaIni = new Date(fechaIni).setHours(24, 0, 0, 0);
@@ -420,7 +418,12 @@ function obtenerHora0(fecha) {
 }
 
 // Ruta para la página de habilitación de máquina
-app.get("/habilitar-maquina", (req, res) => {
+app.get("/habilitar-maquina", async (req, res) => {
+    const response = await axios.get(`${API_BASE_URL}/api/v1/table`);
+    if (response.data && response.data.length > 0) {
+        tableNumber = response.data[0].id || response.data[0].tableNumber || 0;
+        console.log("Número de mesa cargado:", tableNumber);
+    }
     res.render("habilitar-maquina", {
         dbName: dbName || "Mesa Principal",
         dbShortName: dbShortName || "MP",
@@ -428,30 +431,73 @@ app.get("/habilitar-maquina", (req, res) => {
     });
 });
 
-// Ruta POST para procesar la habilitación de máquina
-app.post("/api/habilitar-maquina", async (req, res) => {
-    const { machineId, action } = req.body;
-
+app.get("/lastCutOff", async (req, res) => {
     try {
-        // Aquí iría la lógica para habilitar/deshabilitar la máquina
-        // Por ahora, enviamos un response de éxito
-        const response = await axios.post(`${API_BASE_URL}/api/v1/machine/enable`, {
-            machineId: machineId,
-            action: action, // 'enable' o 'disable'
-        });
+        const response = await axios.get(`${API_BASE_URL}/api/cutoff/last`);
+        const now = new Date();
+        const year = now.getFullYear();
+        const week = Math.ceil((now - new Date(year, 0, 1)) / (24 * 60 * 60 * 1000 * 7));
+        const hour = String(now.getHours()).padStart(2, "0");
+        let code = null;
+        console.log(response.data);
 
-        res.json({
-            success: true,
-            message: `Máquina ${action === "enable" ? "habilitada" : "deshabilitada"} correctamente`,
-            data: response.data,
-        });
+        if (response.data.disabled) {
+            code = `${year}W${String(week).padStart(2, "0")}H${hour}ID${response.data.disabled ? response.data.disabled.id : null}`;
+        }
+        if (response.data.enabled && response.data.disabled && response.data.enabled.id > response.data.disabled.id) {
+            code = null;
+        }
+
+        res.json({ enabled: response.data.enabled ? response.data.enabled : null, code: code, disabled: code ? response.data.disabled.id : null });
     } catch (error) {
-        console.error("Error al habilitar/deshabilitar máquina:", error.message);
-        res.status(500).json({
-            success: false,
-            message: "Error al procesar la solicitud",
-            error: error.message,
-        });
+        console.error("Error al obtener el corte de cajas:", error);
+        res.status(500).json({ error: "Error al obtener el corte de cajas" });
+    }
+});
+
+app.post("/lastCutOff", async (req, res) => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/api/cutoff/last`);
+        res.json(response.data);
+    } catch (error) {
+        console.error("Error al obtener el corte de caja:", error);
+        res.status(500).json({ error: "Error al obtener el corte de caja" });
+    }
+});
+
+app.post("/generateCode", async (req, res) => {
+    try {
+        const data = {
+            time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
+            key: "",
+            enable: false,
+            tick: new Date().toISOString(),
+            liberado: "",
+            hash: "",
+            attempts: 0,
+        };
+        console.log("\x1b[48;2;1;10;50m%s\x1b[0m", data, "data enviado para generar el código");
+
+        const response = await axios.post(`${API_BASE_URL}/api/cutoff/`, data);
+        res.json(response.data);
+    } catch (error) {
+        console.error("Error al generar el código:", error);
+        res.status(500).json({ error: "Error al generar el código" });
+    }
+});
+
+app.patch("/addKey", async (req, res) => {
+    const { key, id } = req.body;
+    if (key && id) {
+        try {
+            const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, { key: key }); //--> actualizar solo la columna key con el id correspondiente
+            res.json(response.data);
+        } catch (error) {
+            console.error("Error al agregar la clave:", error);
+            res.status(500).json({ error: "Error al agregar la clave" });
+        }
+    } else {
+        res.status(400).json({ error: "Clave o ID no proporcionados" });
     }
 });
 
