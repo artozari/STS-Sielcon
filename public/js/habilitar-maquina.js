@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     let codeObtained;
+    let hashObtained;
     let cutOffId;
     const codeInput1 = document.getElementById("cod1");
     const codeInput2 = document.getElementById("cod2");
@@ -15,7 +16,6 @@ document.addEventListener("DOMContentLoaded", function () {
     })
         .then((response) => response.json())
         .then((data) => {
-            console.log(data);
             if (!data.error) {
                 if (data.enabled) {
                     console.log("Ya existe un corte de caja para fecha:", new Date(data.enabled.time).toLocaleDateString());
@@ -44,12 +44,12 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 }
             }
-            console.log("Último corte:", data);
             if (data.code) {
                 cutOffId = data.disabled;
                 codeObtained = data.code;
-                codeInput1.value = codeObtained.slice(0, 7);
-                codeInput2.value = codeObtained.slice(7, 14);
+                hashObtained = data.hash;
+                codeInput1.value = codeObtained;
+                codeInput2.value = hashObtained;
             }
         });
 
@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify({}),
             });
             const data = await response.json();
-            console.log("Respuesta del servidor:", data);
+            location.reload();
         });
     }
     if (saveKeyBtn) {
@@ -85,10 +85,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 const response = await fetch("/addKey", {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ key: keyInput.value, id: cutOffId }),
+                    body: JSON.stringify({ key: keyInput.value, id: cutOffId, hash: hashObtained }),
                 });
                 const data = await response.json();
-                console.log("Respuesta del servidor:", data);
+                if (data.error) {
+                    alert("Error al guardar la clave: " + (data.message || "Error desconocido"));
+                } else {
+                    location.reload();
+                }
             } else {
                 alert("El campo de Codigo y Clave no pueden estar vacíos.");
             }

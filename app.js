@@ -1,4 +1,4 @@
-const path = require("path");
+const path = require("node:path");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const express = require("express");
@@ -7,6 +7,9 @@ const axios = require("axios");
 const stats = require("./statCalculator");
 const app = express();
 require("dotenv").config();
+const hasher = require("./verificador");
+const { hash } = require("node:crypto");
+const { has } = require("browser-sync");
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:4000";
 app.use(cors());
@@ -55,75 +58,78 @@ app.get("/", async (req, res) => {
 });
 
 app.post("/", async (req, res) => {
-    if (req.body.fecha && req.body.tiempo) {
-        const { fecha, tiempo } = req.body;
-        console.log("fecha recibida:", fecha, "tiempo recibido:", tiempo);
+    const { fecha, tiempo } = req.body;
+    if (!fecha || !tiempo) {
+        return renderIndex(res, { items: [] });
+    }
 
-        try {
-            // Formato inicial: YYYY-MM-DD
-            const fechaParts = fecha.split("-");
-            const fechaIniFormato = `${fechaParts[0]}-${fechaParts[1]}`;
+    console.log("fecha recibida:", fecha, "tiempo recibido:", tiempo);
 
-            // Calcular fecha final
-            let fechaIniDate = new Date(fecha);
-            let fechaFinDate = new Date(fechaIniDate);
-            fechaFinDate.setDate(fechaFinDate.getDate() + tiempo);
+    try {
+        const { fechaIniFormato, fechaFinFormato } = buildFechaRange(fecha, tiempo);
 
-            const año = fechaFinDate.getFullYear();
-            const mes = String(fechaFinDate.getMonth() + 1).padStart(2, "0");
-            const dia = String(fechaFinDate.getDate()).padStart(2, "0");
-            const fechaFinFormato = `${año}-${mes}-${dia}`;
+        console.log("Consultando API:", `${API_BASE_URL}/api/games-by-date/${fechaIniFormato}/${fechaFinFormato}`);
 
-            console.log("Consultando API:", `${API_BASE_URL}/api/games-by-date/${fechaIniFormato}/${fechaFinFormato}`);
+        const response = await axios.get(`${API_BASE_URL}/api/games-by-date/${fechaIniFormato}/${fechaFinFormato}`);
+        const rows = response.data;
 
-            const response = await axios.get(`${API_BASE_URL}/api/games-by-date/${fechaIniFormato}/${fechaFinFormato}`);
-            const rows = response.data;
-
-            if (Array.isArray(rows) && rows.length <= 500000) {
-                const cantDatos = rows.length;
-                datosRaw = rows;
-
-                // Extraer tableNumber del primer registro
-                if (rows[0] && rows[0].tableId) {
-                    tableNumber = rows[0].tableId;
-                    console.log("Número de mesa actualizado a:", tableNumber);
-                }
-
-                console.log("Datos obtenidos:", cantDatos);
-                console.log("Primer registro:", JSON.stringify(rows[0], null, 2));
-
-                datosRawProcesados = procesarVector(rows);
-                console.log("Datos procesados:", datosRawProcesados.length);
-                console.log("Primer dato procesado:", JSON.stringify(datosRawProcesados[0], null, 2));
-
-                datosDeRangoDeDias = DiasDeDatosRawProcesados(datosRawProcesados);
-                console.log("Datos por día:", JSON.stringify(datosDeRangoDeDias, null, 2));
-
-                res.render("index", {
-                    dbName: dbName,
-                    dbShortName: dbShortName,
-                    tableNumber: tableNumber,
-                    items: datosDeRangoDeDias,
-                    chi: datosRawProcesados.length > 0 ? datosRawProcesados[0].chi : 0,
-                    cantDatos: cantDatos,
-                    stat: true,
-                });
-            } else {
-                res.send("Demasiados datos para procesar. Por favor, reduce el rango de fechas.");
-            }
-        } catch (err) {
-            console.error("Error al consultar la API:", err.message);
-            res.status(500).send("Error al consultar los datos. Verifica que la API esté disponible.");
+        if (!Array.isArray(rows) || rows.length > 500000) {
+            return res.send("Demasiados datos para procesar. Por favor, reduce el rango de fechas.");
         }
-    } else {
-        res.render("index", {
-            dbName: dbName,
-            dbShortName: dbShortName,
-            tableNumber: tableNumber,
-            items: [],
+
+        datosRaw = rows;
+        if (rows[0]?.tableId) {
+            tableNumber = rows[0].tableId;
+            console.log("Número de mesa actualizado a:", tableNumber);
+        }
+
+        const cantDatos = rows.length;
+        datosRawProcesados = procesarVector(rows);
+
+        console.log("Datos obtenidos:", cantDatos);
+        console.log("Primer registro:", JSON.stringify(rows[0], null, 2));
+        console.log("Datos procesados:", datosRawProcesados.length);
+        console.log("Primer dato procesado:", JSON.stringify(datosRawProcesados[0], null, 2));
+
+        datosDeRangoDeDias = DiasDeDatosRawProcesados(datosRawProcesados);
+        console.log("Datos por día:", JSON.stringify(datosDeRangoDeDias, null, 2));
+
+        return renderIndex(res, {
+            items: datosDeRangoDeDias,
+            chi: datosRawProcesados.length > 0 ? datosRawProcesados[0].chi : 0,
+            cantDatos,
+            stat: true,
         });
+    } catch (err) {
+        console.error("Error al consultar la API:", err.message);
+        return res.status(500).send("Error al consultar los datos. Verifica que la API esté disponible.");
     }
 });
+
+function buildFechaRange(fecha, tiempo) {
+    const fechaParts = fecha.split("-");
+    const fechaIniFormato = `${fechaParts[0]}-${fechaParts[1]}`;
+
+    const fechaIniDate = new Date(fecha);
+    const fechaFinDate = new Date(fechaIniDate);
+    fechaFinDate.setDate(fechaFinDate.getDate() + tiempo);
+
+    const año = fechaFinDate.getFullYear();
+    const mes = String(fechaFinDate.getMonth() + 1).padStart(2, "0");
+    const dia = String(fechaFinDate.getDate()).padStart(2, "0");
+    const fechaFinFormato = `${año}-${mes}-${dia}`;
+
+    return { fechaIniFormato, fechaFinFormato };
+}
+
+function renderIndex(res, data) {
+    res.render("index", {
+        dbName,
+        dbShortName,
+        tableNumber,
+        ...data,
+    });
+}
 
 //? Procesar los datos de la base de datos y los agrupa por fecha
 function procesarVector(vector) {
@@ -422,7 +428,6 @@ app.get("/habilitar-maquina", async (req, res) => {
     const response = await axios.get(`${API_BASE_URL}/api/v1/table`);
     if (response.data && response.data.length > 0) {
         tableNumber = response.data[0].id || response.data[0].tableNumber || 0;
-        console.log("Número de mesa cargado:", tableNumber);
     }
     res.render("habilitar-maquina", {
         dbName: dbName || "Mesa Principal",
@@ -439,16 +444,36 @@ app.get("/lastCutOff", async (req, res) => {
         const week = Math.ceil((now - new Date(year, 0, 1)) / (24 * 60 * 60 * 1000 * 7));
         const hour = String(now.getHours()).padStart(2, "0");
         let code = null;
-        console.log(response.data);
-
-        if (response.data.disabled) {
+        let hashComparacion2 = false;
+        if (response.data.disabled || response.data.enabled) {
+            let hashResponse = response.data.disabled ? response.data.disabled.hash : null;
+            const { id, hash, create_at, tick, ...disabledWithoutHash } = response.data.disabled || {};
+            let hashComparacion = hasher.generateString([JSON.stringify(Object.values(disabledWithoutHash).join("")), process.env.CLAVE_SECRETA]);
+            console.log("Hash de la respuesta:", hashResponse);
+            console.log("Hash generado:", hashComparacion);
+            hashComparacion2 = hasher.isEqual(hashResponse, hashComparacion);
+            console.log("Verificación del hash:", hashComparacion2);
+        }
+        if (response.data.disabled && hashComparacion2) {
             code = `${year}W${String(week).padStart(2, "0")}H${hour}ID${response.data.disabled ? response.data.disabled.id : null}`;
+            if (response.data.enabled && response.data.disabled && response.data.enabled.id > response.data.disabled.id) {
+                code = null;
+            }
         }
-        if (response.data.enabled && response.data.disabled && response.data.enabled.id > response.data.disabled.id) {
-            code = null;
+        if (response.data.enabled) {
+            let hashResponse = response.data.enabled ? response.data.enabled.hash : null;
+            const { id, hash, create_at, tick, ...disabledWithoutHash } = response.data.enabled || {};
+            let hashComparacion = hasher.generateString([JSON.stringify(Object.values(disabledWithoutHash).join("")), process.env.CLAVE_SECRETA]);
+            console.log("Hash de la respuesta:", hashResponse);
+            console.log("Hash generado:", hashComparacion);
+            hashComparacion2 = hasher.isEqual(hashResponse, hashComparacion);
+            console.log("Verificación del hash:", hashComparacion2);
         }
-
-        res.json({ enabled: response.data.enabled ? response.data.enabled : null, code: code, disabled: code ? response.data.disabled.id : null });
+        if (hashComparacion2) {
+            res.json({ enabled: response.data.enabled ? response.data.enabled : null, code: code, disabled: code ? response.data.disabled.id : null, hash: code ? response.data.disabled.hash : null });
+        } else {
+            res.json({ enabled: null, code: null, disabled: null, hash: null });
+        }
     } catch (error) {
         console.error("Error al obtener el corte de cajas:", error);
         res.status(500).json({ error: "Error al obtener el corte de cajas" });
@@ -464,20 +489,22 @@ app.post("/lastCutOff", async (req, res) => {
         res.status(500).json({ error: "Error al obtener el corte de caja" });
     }
 });
+//"2026-06-22T20:22:51.327Zkeyinitialfalse2026-04-23T20:22:51.327Z0"
+//"2026-06-22T20:22:51.327Zkeyinitial2026-04-23T20:22:51.333Zfalse2026-04-23T20:22:51.327Z0"
 
 app.post("/generateCode", async (req, res) => {
     try {
         const data = {
             time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
-            key: "",
+            key: "keyinitial",
             enable: false,
-            tick: new Date().toISOString(),
-            liberado: "",
+            // tick: new Date().toISOString(),
+            liberado: this.time,
             hash: "",
             attempts: 0,
         };
-        console.log("\x1b[48;2;1;10;50m%s\x1b[0m", data, "data enviado para generar el código");
-
+        const { tick, ...newdata } = data;
+        data.hash = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA);
         const response = await axios.post(`${API_BASE_URL}/api/cutoff/`, data);
         res.json(response.data);
     } catch (error) {
@@ -487,10 +514,22 @@ app.post("/generateCode", async (req, res) => {
 });
 
 app.patch("/addKey", async (req, res) => {
-    const { key, id } = req.body;
+    const { key, id, hash } = req.body;
     if (key && id) {
         try {
-            const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, { key: key }); //--> actualizar solo la columna key con el id correspondiente
+            const data = {
+                time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
+                key: key,
+                enable: true,
+                tick: new Date().toISOString(),
+                liberado: hash,
+                hash: "",
+                attempts: 0,
+            };
+            //conClave
+            const { tick, ...newdata } = data;
+            data.hash = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA);
+            const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, data);
             res.json(response.data);
         } catch (error) {
             console.error("Error al agregar la clave:", error);
