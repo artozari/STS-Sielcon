@@ -451,7 +451,9 @@ app.get("/lastCutOff", async (req, res) => {
             let hashComparacion = hasher.generateString([JSON.stringify(Object.values(disabledWithoutHash).join("")), process.env.CLAVE_SECRETA]);
             console.log("Hash de la respuesta:", hashResponse);
             console.log("Hash generado:", hashComparacion);
-            hashComparacion2 = hasher.isEqual(hashResponse, hashComparacion);
+            if (hashResponse) {
+                hashComparacion2 = hasher.isHashProvided(hashResponse, hashComparacion);
+            }
             console.log("Verificación del hash:", hashComparacion2);
         }
         if (response.data.disabled && hashComparacion2) {
@@ -466,7 +468,7 @@ app.get("/lastCutOff", async (req, res) => {
             let hashComparacion = hasher.generateString([JSON.stringify(Object.values(disabledWithoutHash).join("")), process.env.CLAVE_SECRETA]);
             console.log("Hash de la respuesta:", hashResponse);
             console.log("Hash generado:", hashComparacion);
-            hashComparacion2 = hasher.isEqual(hashResponse, hashComparacion);
+            hashComparacion2 = hasher.isHashProvided(hashResponse, hashComparacion);
             console.log("Verificación del hash:", hashComparacion2);
         }
         if (hashComparacion2) {
@@ -504,7 +506,8 @@ app.post("/generateCode", async (req, res) => {
             attempts: 0,
         };
         const { tick, ...newdata } = data;
-        data.hash = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA);
+        let hashdata = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA); //--> aqui deberiamos tener nuestro propio generador de hash o codigo luego desifrable por nosotros mismos.
+        data.hash = hasher.totalHash(hashdata);
         const response = await axios.post(`${API_BASE_URL}/api/cutoff/`, data);
         res.json(response.data);
     } catch (error) {
@@ -528,7 +531,8 @@ app.patch("/addKey", async (req, res) => {
             };
             //conClave
             const { tick, ...newdata } = data;
-            data.hash = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA);
+            let hashdata = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA);
+            data.hash = hasher.totalHash(hashdata);
             const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, data);
             res.json(response.data);
         } catch (error) {
