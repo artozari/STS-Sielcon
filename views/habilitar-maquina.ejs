@@ -54,7 +54,8 @@
                     <p>Sign Table System</p>
                 </div>
                 <% if (tableNumber !==undefined) { %>
-                    <h1 class="header-title" data-tableNumber="<%= JSON.stringify(tableNumber) %>">
+                    <h1 class="header-title" id="tableNumber" value="<%= JSON.stringify(tableNumber)%>"
+                        data-tableNumber="<%= JSON.stringify(tableNumber) %>">
                         STS MESA: <%= tableNumber %>
                     </h1>
                     <% } else { %>

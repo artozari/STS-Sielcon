@@ -5,8 +5,48 @@ document.addEventListener("DOMContentLoaded", function () {
     const codeInput1 = document.getElementById("cod1");
     const codeInput2 = document.getElementById("cod2");
     const keyInput = document.getElementById("key");
+    const tableNumber = document.getElementById("tableNumber") ? document.getElementById("tableNumber").dataset.tablenumber : null;
 
     const errorMessage = document.getElementById("errorMessage");
+
+    const showStatusMessage = (message) => {
+        if (errorMessage) {
+            errorMessage.innerHTML += message;
+            errorMessage.classList.add("show");
+        }
+    };
+
+    const renderEnabledStatus = (data) => {
+        if (data.enabled) {
+            console.log("Ya existe un corte de caja para fecha:", new Date(data.enabled.time).toLocaleDateString());
+            showStatusMessage(" <div style='color: green;'>Ya existe un corte de caja para fecha: " + new Date(data.enabled.time).toLocaleDateString() + ".</div>");
+        } else {
+            console.log("No hay un corte de caja habilitado actualmente. Asegúrate de habilitar un corte de caja antes de generar un código.");
+            showStatusMessage(
+                "<br><div style='color: red;'>No hay un corte de caja habilitado actualmente.<br>Asegurate de habilitar un corte de caja para que la maquina este disponible.</div>",
+            );
+        }
+    };
+
+    const renderPendingStatus = (data) => {
+        if (data.disabled) {
+            console.log("Corte de caja pendiente encontrado:", data.disabled);
+            showStatusMessage(
+                "<br><div style='color: yellow;'>Corte de caja pendiente encontrado.<br>El corte de caja con id " +
+                    data.disabled +
+                    " para fecha " +
+                    new Date(data.timeDisabled).toLocaleDateString("es-ES", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                    }) +
+                    " se encuentra pendiente</div>",
+            );
+        } else {
+            console.log("No se encontró un corte de caja pendiente.");
+            showStatusMessage(" <br><div style='color: yellow;'>No se encontró un corte de caja pendiente.</div>");
+        }
+    };
 
     fetch("/lastCutOff", {
         method: "GET",
@@ -17,39 +57,18 @@ document.addEventListener("DOMContentLoaded", function () {
         .then((response) => response.json())
         .then((data) => {
             if (!data.error) {
-                if (data.enabled) {
-                    console.log("Ya existe un corte de caja para fecha:", new Date(data.enabled.time).toLocaleDateString());
-                    if (errorMessage) {
-                        errorMessage.innerHTML += " <div style='color: green;'>Ya existe un corte de caja para fecha: " + new Date(data.enabled.time).toLocaleDateString() + ".</div>";
-                        errorMessage.classList.add("show");
-                    }
-                } else {
-                    console.log("No hay un corte de caja habilitado actualmente. Asegúrate de habilitar un corte de caja antes de generar un código.");
-                    if (errorMessage) {
-                        errorMessage.innerHTML += "<br><div style='color: red;'>No hay un corte de caja habilitado actualmente.<br>Asegurate de habilitar un corte de caja para que la maquina este disponible.</div>";
-                        errorMessage.classList.add("show");
-                    }
-                }
-                if (!data.disabled) {
-                    console.log("No se encontró un corte de caja pendiente.");
-                    if (errorMessage) {
-                        errorMessage.innerHTML += " <br><div style='color: yellow;'>No se encontró un corte de caja pendiente.</div>";
-                        errorMessage.classList.add("show");
-                    }
-                } else {
-                    console.log("Corte de caja pendiente encontrado:", data.disabled);
-                    if (errorMessage) {
-                        errorMessage.innerHTML += "<br><div style='color: yellow;'>Corte de caja pendiente encontrado.<br>El corte de caja con id " + data.disabled + " se encuentra pendiente</div>";
-                        errorMessage.classList.add("show");
-                    }
-                }
+                renderEnabledStatus(data);
+                renderPendingStatus(data);
             }
             if (data.code) {
                 cutOffId = data.disabled;
                 codeObtained = data.code;
                 hashObtained = data.hash;
                 codeInput1.value = codeObtained;
-                codeInput2.value = hashObtained;
+                codeInput2.value = String(hashObtained)
+                    .slice(-8)
+                    .padStart(8, "0")
+                    .replace(/(.{4})(.{4})/, "$1-$2");
             }
         });
 
@@ -74,10 +93,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({}),
             });
-            const data = await response.json();
+            console.log(response.status);
             location.reload();
         });
     }
+
     if (saveKeyBtn) {
         saveKeyBtn.addEventListener("click", async (e) => {
             e.preventDefault();
@@ -85,11 +105,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 const response = await fetch("/addKey", {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ key: keyInput.value, id: cutOffId, hash: hashObtained }),
+                    body: JSON.stringify({ key: keyInput.value, id: cutOffId, hash: hashObtained, code: codeObtained }),
                 });
                 const data = await response.json();
                 if (data.error) {
-                    alert("Error al guardar la clave: " + (data.message || "Error desconocido"));
+                    alert("Error al guardar la clave: " + (data.error || "Error desconocido"));
                 } else {
                     location.reload();
                 }

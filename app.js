@@ -8,8 +8,9 @@ const stats = require("./statCalculator");
 const app = express();
 require("dotenv").config();
 const hasher = require("./verificador");
-const { hash } = require("node:crypto");
+const { hash, randomUUID } = require("node:crypto");
 const { has } = require("browser-sync");
+const { V4MAPPED } = require("node:dns");
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:4000";
 app.use(cors());
@@ -189,14 +190,9 @@ const DiasDeDatosRawProcesados = (rows) => {
         return item.fecha[1];
     });
 
-    // console.log(fechas, "fechas");
-
     const minFecha = Math.min(...fechas);
     const maxFecha = Math.max(...fechas);
 
-    // console.log(minFecha, maxFecha);
-
-    // Generar todas las fechas del rango
     const dias = [];
     for (let f = minFecha; f <= maxFecha; f += 24 * 60 * 60 * 1000) {
         const d = new Date(f);
@@ -215,7 +211,6 @@ const DiasDeDatosRawProcesados = (rows) => {
         return acc;
     }, {});
 
-    // Para cada día del rango, devolver datos o ceros si no hay partidas
     return dias.map((date) => {
         const datos = agrupado[date];
         return {
@@ -229,14 +224,9 @@ const DiasDeDatosRawProcesados = (rows) => {
 };
 
 app.post("/detalle", (req, res) => {
-    // console.log("fecha recibida:", req.body.fecha);
-
     const [day, month, year] = req.body.fecha.split("/");
     const fechaIni = new Date(`${year}-${month}-${day}`).getTime();
     const fechafin = fechaIni + 24 * 60 * 60 * 1000;
-
-    // console.log("Fecha de inicio en milisegundos:", fechaIni);
-    // console.log("Fecha de fin en milisegundos:", fechafin);
 
     const datosDelDia = datosRawProcesados.filter((item) => {
         return item.fecha[1] >= fechaIni && item.fecha[1] < fechafin;
@@ -256,15 +246,10 @@ app.post("/exportacionGlobal", (req, res) => {
 });
 
 app.post("/stats", (req, res) => {
-    // console.log("entro a STATS");
-    // console.log("req.body.fecha:", req.body.fecha);
     const [day, month, year] = req.body.fecha.split("/");
     const fecha = req.body.fecha;
     const fechaIni = new Date(`${year}-${month}-${day}`).getTime();
     const fechafin = fechaIni + 24 * 60 * 60 * 1000;
-    // console.log("Fecha de inicio en milisegundos:", fechaIni);
-    // console.log("Fecha de fin en milisegundos:", fechafin);
-    // console.log(datosRawProcesados, "datosRawProcesados");
 
     const datosDelDia = datosRawProcesados.filter((item) => {
         return item.fecha[1] >= fechaIni && item.fecha[1] < fechafin;
@@ -274,16 +259,12 @@ app.post("/stats", (req, res) => {
         return { winNumber: item.fecha[3] };
     });
 
-    // console.log("datosWinNumber:", datosWinNumber);
-
     const { ruleta, cantidades } = obtenerValoresDeNumerosIndividualesLocal(datosWinNumber, 10);
 
     const result = ruleta.map((num, index) => ({
         ruleta: num,
         cantidad: cantidades[num],
     }));
-
-    // console.log("Estadísticas enviadas:", result);
 
     datosResult = result;
 
@@ -308,25 +289,20 @@ const procesarDatosDeUnDiaRawParaPresentar = (items) => {
         gameNumber: item.fecha[2],
         winNumber: item.fecha[3],
         rpm: item.fecha[4],
-        // chi: item.chi,
-        // juegoIni: item.juegoIni,
-        // juegoFin: item.juegoFin,
         clockwise: item.fecha[5],
         fecha: item.date,
     }));
-    // console.log("Datos procesados de un día:", items);
-
     return items;
 };
 
 const obtenerValoresDeNumerosIndividualesLocal = (vectorDeVectores, j) => {
-    // console.log("vectorDeVectores:", vectorDeVectores);
-
     const cantidades = new Array(37).fill(0);
     const porcentajes = new Array(37).fill(0);
     const ruletaEuropea = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
 
-    const ruletaAmericana = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, 37, 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2].reverse();
+    const ruletaAmericana = [
+        0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, 37, 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2,
+    ].reverse();
     const ruleta = j === 10 ? ruletaEuropea : ruletaAmericana;
 
     vectorDeVectores.forEach((vector) => {
@@ -338,8 +314,6 @@ const obtenerValoresDeNumerosIndividualesLocal = (vectorDeVectores, j) => {
         }
     });
 
-    // console.log("Cantidad de apariciones por número:", cantidades);
-
     return {
         cantidades,
         porcentajes,
@@ -349,15 +323,13 @@ const obtenerValoresDeNumerosIndividualesLocal = (vectorDeVectores, j) => {
 
 function chiSquaredConstantExpected(observed, expectedValue) {
     expectedValue = expectedValue || average(observed);
-    // console.log("Valor esperado:", expectedValue.toFixed(4));
 
     let cuad = 0;
     for (const obs of observed) {
         cuad += Math.pow(obs - expectedValue, 2);
     }
-    // console.log("Chi cuadrado:", isNaN((cuad / expectedValue).toFixed(2)));
 
-    return isNaN((cuad / expectedValue).toFixed(2)) ? 0 : (cuad / expectedValue).toFixed(2);
+    return Number.isNaN((cuad / expectedValue).toFixed(2)) ? 0 : (cuad / expectedValue).toFixed(2);
 }
 
 function average(valores) {
@@ -405,7 +377,6 @@ app.post("/obtenerDatosDeTapeteAll", (req, res) => {
     const Columnas = stats.calcularPorcentajeColumnas(datosRaw, 10);
     const docenas = stats.calcularPorcentajeDocenas(datosRaw, 10);
     const altasBajas = stats.calcularPorcentajeAltosBajos(datosRaw, 10);
-    // console.log(datosDeTapeteAll, "datosDeTapeteAll");
     res.send({
         items: {
             ...ParesImpares,
@@ -436,43 +407,67 @@ app.get("/habilitar-maquina", async (req, res) => {
     });
 });
 
+function validateCutoffHash(entry) {
+    if (!entry?.hash) return false;
+    const { id, hash, create_at, tick, ...withoutHash } = entry;
+    console.log("Datos para validar hash:", JSON.stringify(Object.values(withoutHash).join("")));
+    return hasher.esFirmaValida(JSON.stringify(Object.values(withoutHash).join("")), hash);
+}
+
+function stringTo4Digits(str) {
+    //--> convierte un string a un número de 4 dígitos utilizando un hash simple
+    str = hasher.generarCRC32(str);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.codePointAt(i);
+        hash = Math.trunc(hash);
+    }
+
+    const result = Math.abs(hash) % 10000;
+
+    return result.toString().padStart(4, "0");
+}
+
+function generateDisabledCode(disabled) {
+    if (!disabled) return null;
+    const keyPart = String(disabled.key).slice(-4); // Tomar los últimos 4 dígitos del hash de la clave
+    const idPart = String(disabled.id).padStart(4, "0"); // Asegurar que el ID tenga al menos 4 dígitos
+    return `ID${idPart}-${keyPart}`;
+}
+
 app.get("/lastCutOff", async (req, res) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/api/cutoff/last`);
-        const now = new Date();
-        const year = now.getFullYear();
-        const week = Math.ceil((now - new Date(year, 0, 1)) / (24 * 60 * 60 * 1000 * 7));
-        const hour = String(now.getHours()).padStart(2, "0");
+        const { disabled, enabled } = response.data || {};
         let code = null;
         let hashComparacion2 = false;
-        if (response.data.disabled || response.data.enabled) {
-            let hashResponse = response.data.disabled ? response.data.disabled.hash : null;
-            const { id, hash, create_at, tick, ...disabledWithoutHash } = response.data.disabled || {};
-            let hashComparacion = hasher.generateString([JSON.stringify(Object.values(disabledWithoutHash).join("")), process.env.CLAVE_SECRETA]);
-            console.log("Hash de la respuesta:", hashResponse);
-            console.log("Hash generado:", hashComparacion);
-            if (hashResponse) {
-                hashComparacion2 = hasher.isHashProvided(hashResponse, hashComparacion);
-            }
-            console.log("Verificación del hash:", hashComparacion2);
-        }
-        if (response.data.disabled && hashComparacion2) {
-            code = `${year}W${String(week).padStart(2, "0")}H${hour}ID${response.data.disabled ? response.data.disabled.id : null}`;
-            if (response.data.enabled && response.data.disabled && response.data.enabled.id > response.data.disabled.id) {
-                code = null;
+
+        if (disabled) {
+            hashComparacion2 = validateCutoffHash(disabled);
+            console.log("Verificación del hashD:", hashComparacion2);
+            if (hashComparacion2) {
+                code = generateDisabledCode(disabled);
+                if (enabled && enabled.id > disabled.id) {
+                    code = null;
+                }
             }
         }
-        if (response.data.enabled) {
-            let hashResponse = response.data.enabled ? response.data.enabled.hash : null;
-            const { id, hash, create_at, tick, ...disabledWithoutHash } = response.data.enabled || {};
-            let hashComparacion = hasher.generateString([JSON.stringify(Object.values(disabledWithoutHash).join("")), process.env.CLAVE_SECRETA]);
-            console.log("Hash de la respuesta:", hashResponse);
-            console.log("Hash generado:", hashComparacion);
-            hashComparacion2 = hasher.isHashProvided(hashResponse, hashComparacion);
-            console.log("Verificación del hash:", hashComparacion2);
+
+        if (enabled) {
+            hashComparacion2 = validateCutoffHash(enabled);
+            console.log("Verificación del hashE:", hashComparacion2);
         }
+
+        console.log(response.data, "el valor disabler.time");
+
         if (hashComparacion2) {
-            res.json({ enabled: response.data.enabled ? response.data.enabled : null, code: code, disabled: code ? response.data.disabled.id : null, hash: code ? response.data.disabled.hash : null });
+            res.json({
+                enabled: enabled || null,
+                code,
+                disabled: code ? disabled.id : null,
+                hash: code ? disabled.hash : null,
+                timeDisabled: code ? disabled.time : null,
+            });
         } else {
             res.json({ enabled: null, code: null, disabled: null, hash: null });
         }
@@ -491,23 +486,23 @@ app.post("/lastCutOff", async (req, res) => {
         res.status(500).json({ error: "Error al obtener el corte de caja" });
     }
 });
-//"2026-06-22T20:22:51.327Zkeyinitialfalse2026-04-23T20:22:51.327Z0"
-//"2026-06-22T20:22:51.327Zkeyinitial2026-04-23T20:22:51.333Zfalse2026-04-23T20:22:51.327Z0"
 
 app.post("/generateCode", async (req, res) => {
+    //--> usar el req para recibir la fecha hasta cuando va a caducar el código, y usar esa fecha para generar el hash con la clave secreta, la fecha y un id aleatorio.
+
     try {
         const data = {
-            time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
-            key: "keyinitial",
+            time: new Date(Date.now() + 2 * 30 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME +  2 meses
+            key: randomUUID().split("-")[4], // Generar una clave aleatoria corta
             enable: false,
-            // tick: new Date().toISOString(),
-            liberado: this.time,
+            tick: new Date().toISOString(),
+            liberado: "",
             hash: "",
             attempts: 0,
         };
         const { tick, ...newdata } = data;
-        let hashdata = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA); //--> aqui deberiamos tener nuestro propio generador de hash o codigo luego desifrable por nosotros mismos.
-        data.hash = hasher.totalHash(hashdata);
+        console.log("Datos para generar hash:", JSON.stringify(Object.values(newdata).join("")));
+        data.hash = hasher.generarFirma(JSON.stringify(Object.values(newdata).join("")));
         const response = await axios.post(`${API_BASE_URL}/api/cutoff/`, data);
         res.json(response.data);
     } catch (error) {
@@ -518,26 +513,61 @@ app.post("/generateCode", async (req, res) => {
 
 app.patch("/addKey", async (req, res) => {
     const { key, id, hash } = req.body;
+    console.log("====================================");
+    console.log(req.body);
+    console.log("====================================");
+
     if (key && id) {
-        try {
-            const data = {
-                time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
-                key: key,
-                enable: true,
-                tick: new Date().toISOString(),
-                liberado: hash,
-                hash: "",
-                attempts: 0,
-            };
-            //conClave
-            const { tick, ...newdata } = data;
-            let hashdata = hasher.generateHash(JSON.stringify(Object.values(newdata).join("")) + process.env.CLAVE_SECRETA);
-            data.hash = hasher.totalHash(hashdata);
-            const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, data);
-            res.json(response.data);
-        } catch (error) {
-            console.error("Error al agregar la clave:", error);
-            res.status(500).json({ error: "Error al agregar la clave" });
+        const response = await axios.get(`${API_BASE_URL}/api/cutoff/${id}`);
+
+        const responseHash = response.data.hash ? response.data.hash : null;
+        const attempts = response.data.attempts;
+        const isValidHash = hasher.isEqual(responseHash, hash);
+        console.log(`Verificación del hash en addKey: ${responseHash} - ${hash}`, isValidHash);
+
+        if (isValidHash && attempts < 3) {
+            const last4KeyDB = response.data.key ? response.data.key.slice(-4).toLowerCase() : "";
+            const last8HashDB = response.data.hash ? response.data.hash.slice(-8).toLowerCase() : "";
+            let timeExpiration = "0";
+            if (response.data.time) {
+                const dateOnly = new Date(response.data.time).toLocaleDateString(); // Obtener solo la fecha sin la hora
+                const dateOnlyMs = new Date(dateOnly).getTime(); // Convertir la fecha a milisegundos
+                timeExpiration = dateOnlyMs.toString();
+                console.log(dateOnly, "fecha de expiracion parseada a ms");
+            }
+            console.log(`${id}${last4KeyDB}${last8HashDB}${timeExpiration}`, "Datos para generar el código esperado");
+
+            const expectedKeyPattern = hasher.generarFirma(`${id}${last4KeyDB}${last8HashDB}${timeExpiration}`).slice(-8).toLowerCase();
+
+            try {
+                //--> Aqui se debe enviar la key dada por la empresa para validar su guardado en la base de datos, el id del corte de caja a modificar, el hash para validar que el.
+                //--> codigo no fue modificado y el nuevo hash con la key incluida.
+
+                // Validar que la key contiene: id + últimos 4 caracteres de la key BD + últimos 8 caracteres del hash BD
+
+                if (key !== expectedKeyPattern) {
+                    return res.status(400).json({ error: "Clave no válida. El formato de la clave es incorrecto." });
+                }
+
+                const data = {
+                    time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
+                    key: key,
+                    enable: true,
+                    tick: new Date().toISOString(),
+                    liberado: responseHash,
+                    hash: "",
+                    attempts: attempts + 1,
+                };
+                const { tick, ...newdata } = data;
+                data.hash = hasher.generarFirma(JSON.stringify(Object.values(newdata).join("")));
+                const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, data);
+                res.json(response.data);
+            } catch (error) {
+                console.error("Error al agregar la clave:", error);
+                res.json({ error: "Error al agregar la clave", message: error.message });
+            }
+        } else {
+            res.status(400).json({ error: "Hash no válido. El código de habilitación puede haber sido modificado." });
         }
     } else {
         res.status(400).json({ error: "Clave o ID no proporcionados" });
