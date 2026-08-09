@@ -3,9 +3,10 @@ const zlib = require("node:zlib");
 require("dotenv").config();
 
 const HashVerifier = {
-    generarFirma: (text) => crypto.createHmac("sha256", process.env.CLAVE_SECRETA).update(text).digest("hex"),
-
-    generarFirmaHabilitadora: (text) => crypto.createHmac("sha256", process.env.CLAVE_SECRETA_HABILITADORA).update(text).digest("hex"),
+    generarFirma: (text) => {
+        const resultado = crypto.createHmac("sha256", process.env.CLAVE_SECRETA).update(text.toLowerCase()).digest("hex");
+        return resultado;
+    },
 
     esFirmaValida: (mensaje, firmaRecibida) => {
         const firmaGenerada = HashVerifier.generarFirma(mensaje);
@@ -23,6 +24,9 @@ const HashVerifier = {
     isEqual: (hash, text) => {
         return text === hash;
     },
+
+    // 2026-07-11T18:50:34.818Z40a3ee5ftrue4ba74fa9fb151a5ba430a1bd6a580b87212365d4b11cb10361727dbc1b01c6b9-f3441
+    // 2026-07-11T18:50:34.818Z40a3ee5ftrue4ba74fa9fb151a5ba430a1bd6a580b87212365d4b11cb10361727dbc1b01c6b9-f3441
 
     generarCRC32: (text) => zlib.crc32(Buffer.from(text)).toString(10),
 
@@ -61,10 +65,9 @@ const HashVerifier = {
 
 if (require.main === module) {
     const dato = process.argv[2];
-    const firma = HashVerifier.generarFirma(dato);
+    const firma = HashVerifier.generarFirma(JSON.stringify(dato));
     console.log(`Mensaje: ${dato}`);
     console.log(`Firma creada: ${firma}`);
-    console.log(process.argv[3]);
 }
 
 module.exports = HashVerifier;

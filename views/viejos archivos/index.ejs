@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/datatables.css">
+    <link href="/datatables.css" rel="stylesheet">
+    <script src="/dataTables.js"></script>
+    <script src="/echart.min.js" defer></script>
+</head>
+
+<body>
+    <header>
+        <div class="card">
+            <div class="bg">
+                <div class="rellenoIzquierdo">
+                    <p>
+                        <span id="fechaActual" class="fechaActual"></span>
+                        <script>
+                            const actualizarFecha = () => {
+                                const fechaActualElement = document.querySelector("#fechaActual");
+                                const fecha = new Date();
+                                fechaActualElement.innerText = new Intl.DateTimeFormat('default', { year: 'numeric', month: 'short', day: 'numeric' }).format(fecha);
+                            }
+                            setInterval(actualizarFecha, 1000);
+                        </script>
+                    </p>
+                    <p>
+                        <span id="horaActual" class="horaActual"></span>
+                        <script>
+                            const actualizarHora = () => {
+                                const horaActualElement = document.querySelector("#horaActual");
+                                const fecha = new Date();
+                                horaActualElement.innerText = new Intl.DateTimeFormat('default', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(fecha);
+                            }
+                            setInterval(actualizarHora, 1000);
+                        </script>
+                    </p>
+                </div>
+                <div class="logo-container">
+                    <img src="./logo_sielcon_page.png" alt="" srcset="">
+                    <p>Sign Table System</p>
+                </div>
+                <h1 class="header-title" data-tableNumber="<%- JSON.stringify(tableNumber) %>">
+                    STS MESA: <%= tableNumber %>
+                </h1>
+            </div>
+            <div class="blob"></div>
+        </div>
+    </header>
+    <main>
+        <form class="search-form formBusqueda" action="/" method="post">
+            <div class="busquedaManualContainer">
+                <div>
+                    <h2>Buscar Por Rango de Fechas</h2>
+                </div>
+                <div>
+                    <label for="fecha">Fecha De Inicio:</label>
+                    <input type="date" id="fecha" name="fecha" value="">
+                </div>
+                <div>
+                    <label for="fechaFin">Fecha De Fin:</label>
+                    <input type="date" id="fechaFin" name="fechaFin" value="">
+                </div>
+                <script>
+
+                    let days;
+                    const calcularDias = () => {
+                        const fecha = document.querySelector("#fecha");
+                        const fechaFin = document.querySelector("#fechaFin");
+                        const startDate = new Date(fecha.value);
+                        const endDate = new Date(fechaFin.value);
+                        const difference = endDate - startDate;
+                        days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+                    }
+
+                    document.querySelector("#fechaFin").addEventListener("change", function () {
+                        calcularDias();
+                        // this.setAttribute("value", days + 1);
+                        const daysOption = document.createElement("option");
+                        daysOption.text = `${days + 1} dias seleccionados`;
+                        daysOption.value = days + 1;
+                        console.log(daysOption.value);
+                        const select = document.querySelector("#tiempo");
+                        select.insertBefore(daysOption, select.firstChild);
+                        daysOption.selected = true;
+                    });
+                </script>
+                <div>
+
+                    <label for="tiempo">Tiempo:</label>
+                    <select name="tiempo" id="tiempo">
+                        <option value="1">1 dia</option>
+                        <option value="3">3 dias</option>
+                        <option value="7">1 semana</option>
+                        <option value="15">15 dias</option>
+                        <option value="30" selected>1 mes</option>
+                        <option value="90">3 meses</option>
+                        <option value="365">1 año</option>
+                    </select>
+                    <button type="submit">Buscar</button>
+                    <button type="button" class="btn-exportarGlobal">Exportar CSV</button>
+                </div>
+            </div>
+            <div class="busquedaRapidasContainer">
+                <div>
+                    <h2>Buscar en dias previos</h2>
+                </div>
+                <div class="quick-search-buttons">
+
+                    <a type="button" class="quick-search" data-days="1">
+                        <img src="/day.svg" alt="file" class="icon">
+                    </a>
+                    <a type="button" class="quick-search" data-days="3"><img src="/threeDays.svg" alt="file"
+                            class="icon"></a>
+                    <a type="button" class="quick-search" data-days="7" alt="file"><img src="/sevenDays.svg" alt="file"
+                            class="icon"></a>
+                    <a type="button" class="quick-search" data-days="15"><img src="/fifteenDays.svg" alt="file"
+                            class="icon"></a>
+                    <a type="button" class="quick-search" data-days="30"><img src="/thirtyDays.svg" alt="file"
+                            class="icon"></a>
+                    <a type="button" class="quick-search" data-days="90"><img src="/ninetyDays.svg" alt="file"
+                            class="icon"></a>
+                    <a type="button" class="quick-search" data-days="365"><img src="/year.svg" alt="file"
+                            class="icon"></a>
+                    <script>
+                        document.querySelectorAll(".quick-search").forEach((button) => {
+                            button.addEventListener("click", () => {
+                                const days = parseInt(button.getAttribute("data-days"), 10); // Obtener los días del botón
+
+                                const today = new Date();
+                                const startDate = new Date(today);
+
+                                // Calcular la fecha de inicio (días hacia atrás)
+                                startDate.setDate(today.getDate() - days + 1);
+
+                                // Formatear la fecha en formato YYYY-MM-DD
+                                const formattedStartDate = startDate.toISOString().split("T")[0];
+
+                                // Actualizar el campo de fecha y el select en el formulario
+                                const form = document.querySelector(".formBusqueda");
+                                const fechaInput = form.querySelector('input[name="fecha"]');
+                                const tiempoSelect = form.querySelector('select[name="tiempo"]');
+
+                                fechaInput.value = formattedStartDate; // Establecer la fecha de inicio
+                                tiempoSelect.value = days; // Establecer el rango de días
+
+                                // Enviar el formulario
+                                form.submit();
+                            });
+                        });
+                    </script>
+                </div>
+            </div>
+        </form>
+
+
+        <% if ( items && items.length> 0) { %>
+            <div>
+                <table id="tablaDias" class="display tablaCss">
+                    <thead>
+                        <tr>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Cantidad de Juegos</th>
+                            <th scope="col">Promedio RPM</th>
+                            <th scope="col">Juego Inicial</th>
+                            <th scope="col">Juego Final</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tfoot>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                            <th scope="col"></th>
+                            <th scope="col" colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+                <script src="/jquery.js" defer></script> <!-- jQuery -->
+                <script src="/dataTables.js" defer></script> <!-- Script de DataTables -->
+                <script src="/script.js" data-items='<%- JSON.stringify(items) %>' defer></script>
+                <button class="btn-exportMuestraTotal" data-items='<%- JSON.stringify(items) %>'>Exportar CSV</button>
+                <%} else {%>
+                    <p>No hay datos para mostrar.</p>
+                    <%}%>
+            </div>
+
+            <div id="tablaDe1DiaSection">
+                <% if ( items && items.length> 0) { %>
+                    <table id="tablaDe1Dia" class="display">
+                    </table>
+                    <%} %>
+            </div>
+
+            <div id="statsSection">
+                <div>
+                    <% if (typeof stat !=="undefined" && stat ){ %>
+                        <div id="chart-container" data-result='<%= stat %>'></div>
+                        <script src="/mesa.js" type="module"></script>
+                        <%} %>
+                </div>
+                <div id="tablaDeParesImparesSection">
+                    <% if ( typeof stat !=="undefined" && stat) { %>
+                        <table id="tablaDeParesImpares" class="display compact">
+                        </table>
+                        <script src="/statPorAreasDeTapete.js" type="module" defer></script>
+                        <%} %>
+                </div>
+                <div id="tablaDeNumerosGanadoresSeccion">
+                    <% if ( typeof stat !=="undefined" && stat) { %>
+                        <table id="tablaDeNumerosGanadores" class="display  nowrap">
+                        </table>
+                        <%} %>
+
+                </div>
+            </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Sielcon</p>
+    </footer>
+    <!-- <script>
+        // Guardar las fechas en localStorage antes de enviar el formulario
+        document.querySelector(".search-form").addEventListener("submit", function () {
+            const fecha = document.querySelector("#fecha").value;
+            const fechaFin = document.querySelector("#fechaFin").value;
+            localStorage.setItem("fecha", fecha);
+            localStorage.setItem("fechaFin", fechaFin);
+        });
+
+        // Restaurar las fechas desde localStorage al cargar la página
+        document.addEventListener("DOMContentLoaded", function () {
+            const fecha = localStorage.getItem("fecha");
+            const fechaFin = localStorage.getItem("fechaFin");
+            if (fecha) document.querySelector("#fecha").value = fecha;
+            if (fechaFin) document.querySelector("#fechaFin").value = fechaFin;
+        });
+    </script> -->
+</body>
+
+</html>

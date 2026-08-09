@@ -1,11 +1,12 @@
 {
-    "name": "stsfast",
+    "name": "sts-ui",
     "version": "1.0.0",
     "description": "Sistema de revicion y analisis de juegos de la maquina",
     "main": "app.js",
     "scripts": {
         "start": "node app.js ",
-        "dev": "nodemon --watch app.js "
+        "dev": "nodemon --watch app.js ",
+        "build": "node build.js"
     },
     "author": "Sielcon",
     "license": "ISC",
@@ -21,11 +22,13 @@
         "jquery": "^3.7.1",
         "morgan": "^1.10.1",
         "morgan-body": "^2.6.9",
+        "mqtt": "^5.15.1",
         "node-fetch": "^3.3.2",
         "nodemon": "^3.1.10",
         "sqlite3": "^5.1.7"
     },
     "devDependencies": {
-        "browser-sync": "^3.0.4"
+        "browser-sync": "^3.0.4",
+        "esbuild": "^0.21.5"
     }
 }

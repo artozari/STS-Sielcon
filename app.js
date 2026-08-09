@@ -41,7 +41,7 @@ app.get("/", async (req, res) => {
     try {
         const response = await axios.get(`${API_BASE_URL}/api/v1/table`);
         if (response.data && response.data.length > 0) {
-            tableNumber = response.data[0].id || response.data[0].tableNumber || 0;
+            tableNumber = response.data[0].tableNumber || response.data[0].id || 0;
             console.log("Número de mesa cargado:", tableNumber);
         }
     } catch (err) {
@@ -74,13 +74,16 @@ app.post("/", async (req, res) => {
         const response = await axios.get(`${API_BASE_URL}/api/games-by-date/${fechaIniFormato}/${fechaFinFormato}`);
         const rows = response.data;
 
+        const responseTable = await axios.get(`${API_BASE_URL}/api/v1/table`);
+        const tableData = responseTable.data;
+
         if (!Array.isArray(rows) || rows.length > 500000) {
             return res.send("Demasiados datos para procesar. Por favor, reduce el rango de fechas.");
         }
 
         datosRaw = rows;
-        if (rows[0]?.tableId) {
-            tableNumber = rows[0].tableId;
+        if (tableData && tableData.length > 0) {
+            tableNumber = tableData[0].tableNumber || tableData[0].id || 0;
             console.log("Número de mesa actualizado a:", tableNumber);
         }
 
@@ -109,7 +112,7 @@ app.post("/", async (req, res) => {
 
 function buildFechaRange(fecha, tiempo) {
     const fechaParts = fecha.split("-");
-    const fechaIniFormato = `${fechaParts[0]}-${fechaParts[1]}`;
+    const fechaIniFormato = `${fechaParts[0]}-${fechaParts[1] > 0 ? fechaParts[1] : "01"}-${fechaParts[2] > 0 ? fechaParts[2] : "01"}`;
 
     const fechaIniDate = new Date(fecha);
     const fechaFinDate = new Date(fechaIniDate);
@@ -396,10 +399,16 @@ function obtenerHora0(fecha) {
 
 // Ruta para la página de habilitación de máquina
 app.get("/habilitar-maquina", async (req, res) => {
-    const response = await axios.get(`${API_BASE_URL}/api/v1/table`);
-    if (response.data && response.data.length > 0) {
-        tableNumber = response.data[0].id || response.data[0].tableNumber || 0;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/v1/table`);
+        if (response.data && response.data.length > 0) {
+            tableNumber = response.data[0].tableNumber || response.data[0].id || 0;
+        }
+    } catch (error) {
+        console.error("Error al obtener las mesas para habilitación de máquina:", error.message || error);
+        tableNumber = tableNumber || 0;
     }
+
     res.render("habilitar-maquina", {
         dbName: dbName || "Mesa Principal",
         dbShortName: dbShortName || "MP",
@@ -513,9 +522,6 @@ app.post("/generateCode", async (req, res) => {
 
 app.patch("/addKey", async (req, res) => {
     const { key, id, hash } = req.body;
-    console.log("====================================");
-    console.log(req.body);
-    console.log("====================================");
 
     if (key && id) {
         const response = await axios.get(`${API_BASE_URL}/api/cutoff/${id}`);
@@ -530,8 +536,8 @@ app.patch("/addKey", async (req, res) => {
             const last8HashDB = response.data.hash ? response.data.hash.slice(-8).toLowerCase() : "";
             let timeExpiration = "0";
             if (response.data.time) {
-                const dateOnly = new Date(response.data.time).toLocaleDateString(); // Obtener solo la fecha sin la hora
-                const dateOnlyMs = new Date(dateOnly).getTime(); // Convertir la fecha a milisegundos
+                const dateOnly = new Date(response.data.time).toLocaleDateString();
+                const dateOnlyMs = new Date(dateOnly).getTime();
                 timeExpiration = dateOnlyMs.toString();
                 console.log(dateOnly, "fecha de expiracion parseada a ms");
             }
@@ -540,25 +546,21 @@ app.patch("/addKey", async (req, res) => {
             const expectedKeyPattern = hasher.generarFirma(`${id}${last4KeyDB}${last8HashDB}${timeExpiration}`).slice(-8).toLowerCase();
 
             try {
-                //--> Aqui se debe enviar la key dada por la empresa para validar su guardado en la base de datos, el id del corte de caja a modificar, el hash para validar que el.
-                //--> codigo no fue modificado y el nuevo hash con la key incluida.
-
-                // Validar que la key contiene: id + últimos 4 caracteres de la key BD + últimos 8 caracteres del hash BD
-
                 if (key !== expectedKeyPattern) {
                     return res.status(400).json({ error: "Clave no válida. El formato de la clave es incorrecto." });
                 }
 
                 const data = {
-                    time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(), // DATETIME + 2 meses
+                    time: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
                     key: key,
                     enable: true,
                     tick: new Date().toISOString(),
-                    liberado: responseHash,
+                    liberado: responseHash + "-" + last4KeyDB.slice(-4),
                     hash: "",
                     attempts: attempts + 1,
                 };
                 const { tick, ...newdata } = data;
+                console.log("Datos para generar hash:", JSON.stringify(Object.values(newdata).join(""))); //--> generar el hash (mensaje) con los datos anteriores sin el tick que usara la maquina para funcionar
                 data.hash = hasher.generarFirma(JSON.stringify(Object.values(newdata).join("")));
                 const response = await axios.patch(`${API_BASE_URL}/api/cutoff/${id}/add-key`, data);
                 res.json(response.data);

@@ -4,7 +4,7 @@ const readline = require("node:readline");
 const generateHmac = (secret, payload) => {
     return crypto
         .createHmac("sha256", secret || process.env.CLAVE_SECRETA)
-        .update(payload, "utf8")
+        .update(payload.toLowerCase())
         .digest("hex");
 };
 
@@ -67,66 +67,50 @@ if (require.main === module) {
 
     const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
-    (async () => {
-        const key = await question("key: ");
-        const dia = await question("dia de expiracion: ");
-        const mes = await question("mes de expiracion: ");
-        const anio = await question("año de expiracion: ");
-        const expiration = `${dia.padStart(2, "0")}-${mes.padStart(2, "0")}-${anio}`;
-        const secret = process.env.CLAVE_SECRETA || (await question("secret: "));
+    if (process.argv[2] === "--generate") {
+        (async () => {
+            const key = await question("key: ");
+            const dia = await question("dia de expiracion: ");
+            const mes = await question("mes de expiracion: ");
+            const anio = await question("año de expiracion: ");
+            const expiration = `${dia.padStart(2, "0")}-${mes.padStart(2, "0")}-${anio}`;
+            const secret = process.env.CLAVE_SECRETA || (await question("secret: "));
 
-        rl.close();
+            rl.close();
 
-        try {
-            const result = compareAndGenerate({ key, expiration, secret });
-            console.log(JSON.stringify(result, null, 2));
-        } catch (error) {
-            console.error(error.message);
-            process.exit(1);
-        }
-    })();
+            try {
+                const result = compareAndGenerate({ key, expiration, secret });
+                console.log(JSON.stringify(result, null, 2));
+            } catch (error) {
+                console.error(error.message);
+                process.exit(1);
+            }
+        })();
+    }
+
+    if (process.argv[2] === "--compare") {
+        (async () => {
+            const mensaje = await question("Mensaje: ");
+            const receivedHash = await question("Hash recibido: ");
+            const secret = await question("secret: ");
+
+            rl.close();
+
+            try {
+                const generatedHmac = generateHmac(secret, JSON.stringify(mensaje));
+                const isValid = safeCompareHex(generatedHmac, receivedHash);
+
+                console.log(`¿La firmas son? `);
+                console.log(generatedHmac);
+                console.log(receivedHash);
+                console.log(`¿La firma es válida? ${isValid}`);
+            } catch (error) {
+                console.error(error.message);
+                process.exit(1);
+            }
+        })();
+    }
 }
-
-// if (require.main === module) {
-//     const rl = readline.createInterface({
-//         input: process.stdin,
-//         output: process.stdout,
-//     });
-
-//     const question = (query) => new Promise((resolve) => rl.question(query, resolve));
-
-//     const getArgOrPrompt = async (value, promptText) => {
-//         if (typeof value !== "undefined" && value !== "") {
-//             return value;
-//         }
-//         return (await question(promptText)).trim();
-//     };
-
-//     (async () => {
-//         const [, , argTime, argKey, argEnable, argAttempt, argReceivedHash, argSecret] = process.argv;
-//         const time = await getArgOrPrompt(argTime, "time: ");
-//         const key = await getArgOrPrompt(argKey, "key: ");
-//         const enable = await getArgOrPrompt(argEnable, "enable: ");
-//         const attempt = await getArgOrPrompt(argAttempt, "attempt: ");
-//         const receivedHash = await getArgOrPrompt(argReceivedHash, "receivedHash: ");
-//         const secret = argSecret || process.env.CLAVE_SECRETA || (await question("secret: "));
-
-//         rl.close();
-
-//         // if (!time || !key || typeof enable === "undefined" || typeof attempt === "undefined" || !receivedHash) {
-//         //     console.error("Uso: node generadorKey.js <time> <key> <enable> <attempt> <receivedHash> [secret]");
-//         //     process.exit(1);
-//         // }
-
-//         try {
-//             const result = compareAndGenerate({ time, key, enable, attempt, receivedHash, secret });
-//             console.log(JSON.stringify(result, null, 2));
-//         } catch (error) {
-//             console.error(error.message);
-//             process.exit(1);
-//         }
-//     })();
-// }
 
 module.exports = {
     createPayloadString,

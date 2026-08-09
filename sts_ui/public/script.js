@@ -1,31 +1,41 @@
-//--> desde aqui la carga de la pagina
-
 let languageDE = "./es-Ar.json";
+
+let dbName = document.querySelector("h1").getAttribute("data-dbname");
+let dbShortName = document.querySelector("h1").getAttribute("data-dbshortname");
+let tableNumber = document.querySelector("h1").getAttribute("data-tableNumber");
 
 document.addEventListener("DOMContentLoaded", () => {
   const items = JSON.parse(document.querySelector("script[data-items]").dataset.items);
 
-  //   console.log("Items cargados desde el servidor:", items);
+  // console.log("Items cargados desde el servidor:", items);
+
+  const filteredItems = items.filter((item) => item.cantidad !== 0);
 
   let table = new DataTable("#tablaDias", {
     language: {
       url: languageDE,
     },
     destroy: true, // Permitir la reinitialización
-    data: items,
-    order: [], // Deshabilitar el ordenamiento inicial
+    data: filteredItems,
+    order: [
+      [3, "desc"],
+      [0, "desc"],
+    ], // Deshabilitar el ordenamiento inicial
     columns: [
       { data: "date", title: "Fecha" },
       { data: "cantidad", title: "Cantidad de Juegos" },
       { data: "promedioRpm", title: "Promedio RPM" },
-      { data: "juegoFin", title: "Juego Inicial" },
-      { data: "juegoIni", title: "Juego Final" },
+      {
+        data: "juegoIni",
+        title: "Juego Inicial",
+      },
+      { data: "juegoFin", title: "Juego Final" },
       {
         orderable: false,
         data: "date",
         title: "Acciones",
         render: function (data) {
-          return `<button class="btn btn-detalleDia" data-id="${data}" style="background-color: transparent; border: none; cursor: pointer;" title="Ver Juegosd del dia ${data}">
+          return `<button class="btn btn-detalleDia" data-id="${data}" style="background-color: transparent; border: none; cursor: pointer;" title="Ver Juegos del dia ${data}">
                     <img src="detallesIco.svg" alt="Ver Detalle" width="15" height="15" />
                   </button>
                   <button class="btn btn-Stats" data-id="${data}" style="background-color: transparent; border: none; cursor: pointer;" title="Ver estadisticas del dia ${data}">
@@ -34,6 +44,12 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       },
     ],
+    rowCallback: function (row, data) {
+      // Verificar el valor de la columna "cantidad"
+      if (data.cantidad === 0) {
+        $(row).hide();
+      }
+    },
     footerCallback: function (row, data, start, end, display) {
       // Calcular totales
       const totalCantidad = data.reduce((sum, item) => sum + item.cantidad, 0);
@@ -66,6 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // $("#tablaDias").addClass("fechaDetalle");
 });
 
+$(".search-form").on("click", ".btn-exportarGlobal", function () {
+  exportarGlobal();
+});
+
 $("#tablaDias").on("click", ".btn-detalleDia", function () {
   const btn = this;
   const fecha = btn.getAttribute("data-id");
@@ -96,19 +116,29 @@ const datosDe1Dia = async (fecha) => {
         const nuevaTabla = document.createElement("table");
         nuevaTabla.id = "tablaDe1Dia";
         nuevaTabla.classList.add("display");
-        const contenedorPadre = document.getElementById("tablaDe1DiaSection"); // Ajusta el ID del contenedor según tu estructura
+        const contenedorPadre = document.getElementById("tablaDe1DiaSection");
         contenedorPadre.appendChild(nuevaTabla);
       }
+
+      // console.log("Datos recibidos para 1 día:", data);
 
       // Inicializar la tabla nuevamente
       const tabla = new DataTable("#tablaDe1Dia", {
         language: {
           url: languageDE,
         },
+        order: [[2, "desc"]],
         destroy: true, // Permitir la reinitialización
         data: data.items,
         columns: [
           { data: "id", title: "ID", orderable: false },
+          {
+            data: "date",
+            title: "Fecha",
+            render: function (data) {
+              return new Intl.DateTimeFormat("default", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(data));
+            },
+          },
           { data: "gameNumber", title: "Número de Juego" },
           { data: "winNumber", title: "Número Ganador" },
           { data: "rpm", title: "Rpm" },
@@ -138,13 +168,30 @@ const datosDe1Dia = async (fecha) => {
 
         document.querySelector(".btn-exportJuegosDelDia").addEventListener("click", function () {
           const items = JSON.parse(this.getAttribute("data-items"));
-          const titles = ["ID", "Número de Juego", "Número Ganador", "Rpm", "Clockwise", "fecha"];
+          const titleMain = `Juegos del dia ${items.fecha} - Mesa: ${tableNumber} `;
+          const titles = ["ID", "Fecha", "Número de Juego", "Número Ganador", "Rpm", "Clockwise", "fecha"];
           const csvContent = `data:text/csv;charset=utf-8,${[
+            titleMain,
             titles.join(";"),
-            ...items.items.map((item) =>
+            ...items.items.reverse().map((item) =>
               Object.entries(item)
                 .filter(([key]) => !["juegoIni", "juegoFin"].includes(key))
-                .map(([_, value]) => value)
+                .map(([key, value]) => {
+                  // console.log(key, value);
+
+                  // Si la clave es "fecha" y la posición 1 contiene milisegundos, formatear como fecha y hora
+                  if (key === "date") {
+                    return new Intl.DateTimeFormat("default", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    }).format(new Date(value));
+                  }
+                  return value; // Devolver el valor original para otras claves
+                })
                 .join(";")
                 .replace(/"/g, '""')
             ),
@@ -169,8 +216,10 @@ const datosDe1Dia = async (fecha) => {
 
 document.querySelector(".btn-exportMuestraTotal").addEventListener("click", function () {
   const items = JSON.parse(this.getAttribute("data-items"));
+  titleMain = "Fechas Jugadas en Mesa:  " + tableNumber;
   const titles = ["Fecha", "Cantidad de Juegos", "Promedio RPM", "Juego Inicial", "Juego Final"];
-  const csvContent = `data:text/csv;charset=utf-8,${[titles.join(";"), ...items.map((item) => Object.values(item).join(";").replace(/"/g, '""'))].join("\n")}`;
+  // console.log("Exportando items:", items);
+  const csvContent = `data:text/csv;charset=utf-8,${[titleMain, titles.join(";"), ...items.reverse().map((item) => Object.values(item).join(";").replace(/"/g, '""'))].join("\n")}`;
 
   const encodedUri = encodeURI(csvContent);
   const today = new Date();
@@ -243,7 +292,7 @@ window.mostrarEstadisticas = function mostrarEstadisticas(fecha) {
         if (!document.querySelector(".btn-exportNumerosGanadores")) {
           const btnExport = document.createElement("button");
           btnExport.classList.add("btn-exportNumerosGanadores");
-          btnExport.textContent = "Exportar Tabla y Gráfico";
+          btnExport.textContent = "Exportar Tabla";
           btnExport.setAttribute("data-stat", JSON.stringify(data.result));
           document.getElementById("tablaDeNumerosGanadores").parentElement.appendChild(btnExport);
 
@@ -320,7 +369,7 @@ window.mostrarEstadisticasAll = function mostrarEstadisticasAll() {
         if (!document.querySelector(".btn-exportNumerosGanadores")) {
           const btnExport = document.createElement("button");
           btnExport.classList.add("btn-exportNumerosGanadores");
-          btnExport.textContent = "Exportar Tabla y Gráfico";
+          btnExport.textContent = "Exportar Tabla";
           btnExport.setAttribute("data-stat", JSON.stringify(data.result));
           document.getElementById("tablaDeNumerosGanadores").parentElement.appendChild(btnExport);
 
@@ -352,72 +401,72 @@ window.mostrarEstadisticasTapeteAll = function mostrarEstadisticasTapeteAll() {
         {
           tipo: "Ceros",
           valor: data.items.ceros,
-          porcentaje: data.items.porcentajeCeros,
+          porcentaje: data.items.porcentajeCeros.toFixed(2),
         },
         {
           tipo: "Pares",
           valor: data.items.pares,
-          porcentaje: data.items.porcentajePares,
+          porcentaje: data.items.porcentajePares.toFixed(2),
         },
         {
           tipo: "Impares",
           valor: data.items.impares,
-          porcentaje: data.items.porcentajeImpares,
+          porcentaje: data.items.porcentajeImpares.toFixed(2),
         },
         {
           tipo: "Primera Columna",
           valor: data.items.primeraColumna,
-          porcentaje: data.items.porcentajePrimeraColumna,
+          porcentaje: data.items.porcentajePrimeraColumna.toFixed(2),
         },
         {
           tipo: "Segunda Columna",
           valor: data.items.segundaColumna,
-          porcentaje: data.items.porcentajeSegundaColumna,
+          porcentaje: data.items.porcentajeSegundaColumna.toFixed(2),
         },
         {
-          tipo: "Tercera columna",
+          tipo: "Tercera Columna",
           valor: data.items.terceraColumna,
-          porcentaje: data.items.porcentajeTerceraColumna,
+          porcentaje: data.items.porcentajeTerceraColumna.toFixed(2),
         },
         {
           tipo: "Rojos",
           valor: data.items.rojos,
-          porcentaje: data.items.porcentajeRojos,
+          porcentaje: data.items.porcentajeRojos.toFixed(2),
         },
         {
           tipo: "Negros",
           valor: data.items.negros,
-          porcentaje: data.items.porcentajeNegros,
+          porcentaje: data.items.porcentajeNegros.toFixed(2),
         },
         {
           tipo: "Verdes",
           valor: data.items.verdes,
-          porcentaje: data.items.porcentajeVerdes,
+          porcentaje: data.items.porcentajeVerdes.toFixed(2),
         },
         {
           tipo: "Primer Docena",
           valor: data.items.primeraDocena,
-          porcentaje: data.items.porcentajePrimeraDocena,
+          porcentaje: data.items.porcentajePrimeraDocena.toFixed(2),
         },
         {
           tipo: "Segunda Docena",
           valor: data.items.segundaDocena,
-          porcentaje: data.items.porcentajeSegundaDocena,
+          porcentaje: data.items.porcentajeSegundaDocena.toFixed(2),
         },
         {
           tipo: "Tercera Docena",
           valor: data.items.terceraDocena,
-          porcentaje: data.items.porcentajeTerceraDocena,
+          porcentaje: data.items.porcentajeTerceraDocena.toFixed(2),
         },
         {
           tipo: "Altas",
           valor: data.items.altos,
-          porcentaje: data.items.porcentajeAltos,
+          porcentaje: data.items.porcentajeAltos.toFixed(2),
         },
         {
           tipo: "Bajas",
           valor: data.items.bajos,
-          porcentaje: data.items.porcentajeBajos,
+          porcentaje: data.items.porcentajeBajos.toFixed(2),
         },
       ];
 
@@ -437,6 +486,7 @@ window.mostrarEstadisticasTapeteAll = function mostrarEstadisticasTapeteAll() {
         },
         destroy: true, // Permitir la reinitialización
         info: false,
+        order: [],
         ordering: true,
         paging: false,
         searching: false,
@@ -467,4 +517,94 @@ window.mostrarEstadisticasTapeteAll = function mostrarEstadisticasTapeteAll() {
     .catch((error) => {
       console.error("Error al obtener las estadísticas:", error);
     });
+
+  if (document.querySelector(".btn-exportar-csv")) {
+    document.querySelector(".btn-exportar-csv").remove();
+  }
+  const exportButton = document.createElement("button");
+  exportButton.textContent = "Exportar a CSV";
+  exportButton.classList.add("btn-exportar-csv");
+  document.querySelector("#tablaDeParesImparesSection").insertAdjacentElement("afterbegin", exportButton); // Ajusta según la estructura de tu HTML
+
+  exportButton.addEventListener("click", () => {
+    const table = $("#tablaDeParesImpares").DataTable();
+    const data = table.rows().data();
+
+    if (data.length === 0) {
+      alert("No hay datos para exportar.");
+      return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,Tipo;Valor;Porcentaje\n";
+
+    data.each((row) => {
+      csvContent += `${row.tipo};${row.valor};${row.porcentaje}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "tablaDeParesImpares.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
 };
+
+function exportarGlobal() {
+  // Realizar la solicitud al endpoint
+  fetch("/exportacionGlobal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+
+      if (data.items && data.items.length > 0) {
+        // Crear el contenido del archivo CSV
+        const titles = Object.keys(data.items[0])
+          .filter((key) => key !== "fecha") // Excluir la columna "fecha"
+          .map((key) => (key === "date" ? "fecha - hora" : key)); // Renombrar "date" a "fecha, hora"
+
+        const csvContent = `data:text/csv;charset=utf-8,${[
+          titles.join(";"), // Encabezados
+          ...data.items.map(
+            (item) =>
+              titles
+                .map((key) => {
+                  if (key === "fecha - hora") {
+                    // Transformar milisegundos a formato dd/mm/yyyy - hh:mm:ss
+                    const date = new Date(item["date"]);
+                    const formattedDate = `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()} - ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(
+                      2,
+                      "0"
+                    )}:${String(date.getSeconds()).padStart(2, "0")}`;
+                    return formattedDate;
+                  }
+                  return item[key];
+                })
+                .join(";") // Filas de datos
+          ),
+        ].join("\n")}`;
+
+        // Crear un enlace para descargar el archivo
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        const today = new Date();
+        const formattedDate = `${today.getFullYear()}_${String(today.getMonth() + 1).padStart(2, "0")}_${String(today.getDate()).padStart(2, "0")}`;
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `${formattedDate}_exportacionGlobal.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        console.error("No hay datos para exportar.");
+        alert("No hay datos disponibles para exportar en el rango seleccionado.");
+      }
+    })
+    .catch((error) => {
+      console.error("Error al exportar los datos:", error);
+      alert("Ocurrió un error al exportar los datos.");
+    });
+}
